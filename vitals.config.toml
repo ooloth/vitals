@@ -1,0 +1,21 @@
+# vitals.config.toml
+#
+# Non-secret params (project IDs, URLs, selectors) are stored plainly here.
+# Secrets (tokens, keys) are referenced as env var names (e.g. "${GRAFANA_TOKEN}")
+# and injected at runtime via: op run --env-file=secrets.env -- next dev
+# See secrets.env.example for the expected env vars and their op:// paths.
+#
+# GCP: no secrets needed when using Application Default Credentials (ADC)
+# Grafana: may need a token depending on your setup (see secrets.env.example)
+
+[[projects]]
+id = "my-project"
+name = "My Project"
+
+  [[projects.panels]]
+  type = "errors"
+  source = "google_cloud_logging"
+
+  [projects.panels.params]
+  project_id = "my-gcp-project-123"   # not a secret — visible in GCP console
+  # log_name = "projects/my-project/logs/app"  # optional: filter to a specific log

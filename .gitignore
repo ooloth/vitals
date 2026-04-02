@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+secrets.env
+
+# database
+*.db
+*.db-journal
+
+# misc
+.DS_Store
