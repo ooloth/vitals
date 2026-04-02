@@ -1,14 +1,25 @@
+import { notFound } from "next/navigation";
+import { loadConfig } from "@/lib/config/load";
+import { ErrorsPanel } from "@/components/panels/errors/ErrorsPanel";
+import { mockErrorsData } from "@/lib/panels/errors/mock";
+
 interface Props {
   params: Promise<{ id: string; panel: string }>;
 }
 
 export default async function PanelPage({ params }: Props) {
   const { id, panel } = await params;
+  const { projects } = loadConfig();
 
-  return (
-    <div className="p-6">
-      <h1 className="text-xl font-semibold capitalize mb-1">{panel}</h1>
-      <p className="text-sm text-muted-foreground">{id}</p>
-    </div>
-  );
+  const project = projects.find((p) => p.id === id);
+  if (!project) notFound();
+
+  const panelConfig = project.panels.find((p) => p.type === panel);
+  if (!panelConfig) notFound();
+
+  if (panel === "errors") {
+    return <ErrorsPanel projectName={project.name} data={mockErrorsData} />;
+  }
+
+  notFound();
 }
