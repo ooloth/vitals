@@ -11,16 +11,17 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import type { ProjectConfig } from "@/lib/config/schema";
 
-const projects = [
-  {
-    id: "my-project",
-    name: "My Project",
-    panels: [{ type: "errors", label: "Errors" }],
-  },
-];
+const PANEL_LABELS: Record<string, string> = {
+  errors: "Errors",
+};
 
-export function AppSidebar() {
+interface Props {
+  projects: Pick<ProjectConfig, "id" | "name" | "panels">[];
+}
+
+export function AppSidebar({ projects }: Props) {
   const pathname = usePathname();
 
   return (
@@ -38,7 +39,7 @@ export function AppSidebar() {
                       render={<Link href={href} />}
                       isActive={pathname === href}
                     >
-                      {panel.label}
+                      {PANEL_LABELS[panel.type] ?? panel.type}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

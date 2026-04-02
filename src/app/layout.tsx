@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { loadConfig } from "@/lib/config/load";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,6 +26,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { projects } = loadConfig();
+
   return (
     <html
       lang="en"
@@ -33,7 +36,7 @@ export default function RootLayout({
       <body className="min-h-full flex">
         <TooltipProvider>
           <SidebarProvider>
-            <AppSidebar />
+            <AppSidebar projects={projects} />
             <main className="flex flex-1 flex-col">{children}</main>
           </SidebarProvider>
         </TooltipProvider>
