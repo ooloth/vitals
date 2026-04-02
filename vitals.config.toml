@@ -19,3 +19,31 @@ name = "Pilots"
   [projects.panels.params]
   dataset = "pilots"
   token = "${AXIOM_TOKEN}"
+
+# ── Reference configs (commented out until real credentials are available) ────
+
+# [[projects]]
+# id = "my-work-api"
+# name = "My Work API"
+#
+#   [[projects.panels]]
+#   type = "errors"
+#   source = "google_cloud_logging"
+#
+#   [projects.panels.params]
+#   project_id = "my-gcp-project-123"        # not a secret — visible in GCP console
+#   # log_name = "projects/my-project/logs/app"  # optional: filter to a specific log
+
+# [[projects]]
+# id = "my-grafana-service"
+# name = "My Grafana Service"
+#
+#   [[projects.panels]]
+#   type = "errors"
+#   source = "grafana_loki"
+#
+#   [projects.panels.params]
+#   base_url = "https://grafana.yourcompany.com"
+#   datasource_uid = "abc123"                # Grafana → Connections → Data sources
+#   selector = '{app="my-service", env="prod"}'
+#   # token = "${GRAFANA_TOKEN}"             # only needed if auth required

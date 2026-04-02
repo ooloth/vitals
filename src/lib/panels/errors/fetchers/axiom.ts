@@ -26,7 +26,7 @@ export async function fetchErrorsFromAxiom(
     | limit 50
   `;
 
-  const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const startTime = new Date("2025-12-01T00:00:00Z").toISOString();
   const endTime = new Date().toISOString();
 
   const result = await axiom.query(apl, { startTime, endTime });
@@ -43,7 +43,7 @@ export async function fetchErrorsFromAxiom(
 
   return {
     groups,
-    timeWindow: "last 24h",
+    timeWindow: "since Dec 2025",
     fetchedAt: new Date(),
   };
 }
