@@ -43,7 +43,7 @@ gcloud logging read 'severity>=ERROR' \
 
 ## Output format
 
-Respond with JSON only. No prose.
+Write your output as JSON to the file path provided by the coordinator.
 
 ```json
 {

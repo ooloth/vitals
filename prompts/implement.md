@@ -14,7 +14,7 @@ You will receive a GitHub issue. Your job is to:
 
 ## Output format
 
-Respond with JSON only. No prose outside the JSON.
+Write your output as JSON to the file path provided by the coordinator.
 
 ```json
 {

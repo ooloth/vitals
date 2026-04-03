@@ -13,7 +13,7 @@ You will receive a JSON array of raw findings from a log scan. Your job is to:
 
 ## Output format
 
-Respond with JSON only. No prose.
+Write your output as JSON to the file path provided by the coordinator.
 
 ```json
 {

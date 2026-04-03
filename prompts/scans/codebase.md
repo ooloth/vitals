@@ -25,7 +25,7 @@ Use your file reading and search tools to navigate the codebase. Start with:
 
 ## Output format
 
-Respond with JSON only. No prose.
+Write your output as JSON to the file path provided by the coordinator.
 
 ```json
 {
