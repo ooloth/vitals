@@ -129,6 +129,7 @@ def prepare_branch(issue_number: int, project_path: Path) -> str:
 
 
 def open_pr(branch: str, impl: dict, project_path: Path) -> None:
+    subprocess.run(["git", "push", "-u", "origin", branch], check=True, cwd=project_path)
     subprocess.run([
         "gh", "pr", "create",
         "--title", impl["pr_title"],
