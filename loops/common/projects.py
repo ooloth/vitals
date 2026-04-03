@@ -43,8 +43,14 @@ def run_command(cmd: str, project_path: Path, label: str) -> None:
 
 def run_tests(project_path: Path, test_cmd: str | None = None) -> dict:
     if test_cmd:
-        result = subprocess.run(shlex.split(test_cmd), capture_output=True, text=True, cwd=project_path)
-        return {"ran": True, "passed": result.returncode == 0, "output": (result.stdout + result.stderr).strip()}
+        result = subprocess.run(
+            shlex.split(test_cmd), capture_output=True, text=True, cwd=project_path
+        )
+        return {
+            "ran": True,
+            "passed": result.returncode == 0,
+            "output": (result.stdout + result.stderr).strip(),
+        }
     has_tests = (project_path / "tests").exists() or (project_path / "pytest.ini").exists()
     if not has_tests:
         return {"ran": False, "reason": "no test suite found"}
@@ -52,6 +58,12 @@ def run_tests(project_path: Path, test_cmd: str | None = None) -> dict:
     python = str(venv_python) if venv_python.exists() else "python3"
     result = subprocess.run(
         [python, "-m", "pytest", "--tb=short", "-q"],
-        capture_output=True, text=True, cwd=project_path,
+        capture_output=True,
+        text=True,
+        cwd=project_path,
     )
-    return {"ran": True, "passed": result.returncode == 0, "output": (result.stdout + result.stderr).strip()}
+    return {
+        "ran": True,
+        "passed": result.returncode == 0,
+        "output": (result.stdout + result.stderr).strip(),
+    }

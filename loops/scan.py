@@ -6,11 +6,15 @@ from loops.common import agent, load_project, open_issue_titles, post_issues, sc
 BACKPRESSURE_CAP = 10
 
 
-def run_scan(project_id: str, scan_type: str = "logs", max_rounds: int = 5, dry_run: bool = False) -> None:
+def run_scan(
+    project_id: str, scan_type: str = "logs", max_rounds: int = 5, dry_run: bool = False
+) -> None:
     if not dry_run:
         open_count = len(open_issue_titles())
         if open_count >= BACKPRESSURE_CAP:
-            print(f"[scan] {open_count} open issues pending fix — skipping scan (backpressure cap: {BACKPRESSURE_CAP})")
+            print(
+                f"[scan] {open_count} open issues pending fix — skipping scan (backpressure cap: {BACKPRESSURE_CAP})"
+            )
             return
 
     project = load_project(project_id)
@@ -41,10 +45,15 @@ def run_scan(project_id: str, scan_type: str = "logs", max_rounds: int = 5, dry_
         reviewed = agent("prompts/scan/review-issues.md", json.dumps(drafted))
         if reviewed["ready"]:
             post_issues(reviewed["issues"], dry_run=dry_run)
-            print(f"[scan] {project_id}/{scan_type}: {'would post' if dry_run else 'posted'} {len(reviewed['issues'])} issue(s)")
+            print(
+                f"[scan] {project_id}/{scan_type}: {'would post' if dry_run else 'posted'} {len(reviewed['issues'])} issue(s)"
+            )
             return
         print(f"[scan] round {round_n + 1}: needs revision — {reviewed['feedback']}")
         drafted = agent("prompts/scan/draft-issues.md", json.dumps(reviewed))
 
-    print(f"[escalate] {project_id}/{scan_type}: issues did not converge after {max_rounds} rounds", file=sys.stderr)
+    print(
+        f"[escalate] {project_id}/{scan_type}: issues did not converge after {max_rounds} rounds",
+        file=sys.stderr,
+    )
     sys.exit(1)

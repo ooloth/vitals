@@ -34,10 +34,31 @@ def post_issues(issues: list[dict], dry_run: bool = False) -> None:
             print(f"  label: {issue.get('label', 'sev:medium')}")
             print(f"  body:\n{issue['body']}\n")
         else:
-            gh("issue", "create", "--title", title, "--body", issue["body"], "--label", issue.get("label", "sev:medium"), capture=False)
+            gh(
+                "issue",
+                "create",
+                "--title",
+                title,
+                "--body",
+                issue["body"],
+                "--label",
+                issue.get("label", "sev:medium"),
+                capture=False,
+            )
 
 
 def open_pr(branch: str, impl: dict, project_path) -> None:
     from loops.common.git import git
+
     git("push", "-u", "origin", branch, cwd=project_path, capture=False)
-    gh("pr", "create", "--title", impl["pr_title"], "--body", impl["pr_body"], "--head", branch, capture=False)
+    gh(
+        "pr",
+        "create",
+        "--title",
+        impl["pr_title"],
+        "--body",
+        impl["pr_body"],
+        "--head",
+        branch,
+        capture=False,
+    )

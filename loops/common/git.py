@@ -2,7 +2,9 @@ import subprocess
 from pathlib import Path
 
 
-def git(*args: str, cwd: Path, capture: bool = True, check: bool = True) -> subprocess.CompletedProcess:
+def git(
+    *args: str, cwd: Path, capture: bool = True, check: bool = True
+) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], capture_output=capture, text=True, check=check, cwd=cwd)
 
 

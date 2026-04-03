@@ -37,7 +37,9 @@ def _print_event(event: dict) -> None:
         print(flush=True)
 
 
-def agent(prompt_file: str, context: str, max_turns: int = 20, allowed_tools: list[str] | None = None) -> dict:
+def agent(
+    prompt_file: str, context: str, max_turns: int = 20, allowed_tools: list[str] | None = None
+) -> dict:
     prompt = (ROOT / prompt_file).read_text()
     output_file = Path(tempfile.mktemp(suffix=".json"))
     full_prompt = (
@@ -45,7 +47,15 @@ def agent(prompt_file: str, context: str, max_turns: int = 20, allowed_tools: li
         f"Write your JSON output to this file: {output_file}\n"
         f"Do not include the JSON in your text response."
     )
-    cmd = ["claude", "-p", full_prompt, "--max-turns", str(max_turns), "--output-format", "stream-json"]
+    cmd = [
+        "claude",
+        "-p",
+        full_prompt,
+        "--max-turns",
+        str(max_turns),
+        "--output-format",
+        "stream-json",
+    ]
     if allowed_tools:
         cmd += ["--allowedTools"] + allowed_tools
     print(f"\n{'─' * 60}", flush=True)

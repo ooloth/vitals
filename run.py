@@ -9,6 +9,7 @@ Usage:
 Secrets:
   op run --env-file=secrets.env -- python run.py scan pilots
 """
+
 import argparse
 
 from loops.fix import run_fix
