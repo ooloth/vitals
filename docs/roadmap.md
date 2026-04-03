@@ -41,6 +41,20 @@
       branch on exit, push before PR
 - [x] Per-project install/checks/tests commands; coordinator runs them to
       verify clean state before starting work
+- [ ] Issue locking: claim an issue with an `agent-fix-in-progress` label
+      before starting work; release it on exit (including on error) so two
+      concurrent runs can't collide on the same issue
+- [ ] No-changes diagnostics: when the implement agent produces no diff,
+      post its raw first response as a comment on the issue and remove the
+      `ready-to-fix` label so a human can see why it stalled instead of
+      silently retrying the round
+- [ ] Review trail as PR comment: after opening the PR, append a collapsible
+      summary of every implement/review iteration (iteration count,
+      approved/rejected breakdown, last iteration open) so reviewers can
+      understand the run without watching it live
+- [ ] Use `--force-with-lease` on `git push` instead of plain `-u origin
+      branch` so amended branches can be re-pushed safely without
+      overwriting unexpected remote state
 - [ ] Staleness scan: new scan type that batch reviews open agent-labelled
       issues against the current codebase, comments and closes stale ones
       before the fix loop picks them up (`--type staleness`)
@@ -62,6 +76,10 @@
       `projects.schema.json` from `model_json_schema()` so editors keep their
       schema file but there is only one source of truth; delete the
       hand-authored schema
+- [ ] Effort/model per role: pass `--effort` (and optionally a model override)
+      to each claude invocation independently so the reviewer can run at high
+      effort without paying for it on the implement step; configurable in
+      `projects.json` per project
 
 ## Phase 2: Schedulable scans
 
@@ -96,6 +114,21 @@ changes required.
 
 - [ ] Nightly or triggered fix runs (scan finds → fix loop acts)
 - [ ] Human-in-the-loop escalation for low-confidence fixes
+
+## Future: Spec-based fix (no issue required)
+
+Run the fix loop against a local spec file or inline prompt without
+needing a GitHub issue — `python run.py fix -f spec.md` or
+`fix -p "description"`. Useful for one-off tasks and for developing
+a spec before turning it into a tracked issue. Naturally pairs with
+a plan step that produces the spec.
+
+## Future: Plan (develop a spec interactively)
+
+An interactive session where an agent explores the codebase, asks
+clarifying questions, presents options, and converges on an approach —
+outputting a structured spec file ready for the fix loop or Ralph.
+Out of scope until spec-based fix is in place.
 
 ## Future: Ralph loop (iterative refinement)
 
