@@ -87,7 +87,7 @@
       - Scoping: inject all learnings or only those relevant to the current
         scan type / project?
 
-      See `docs/learnings/README.md` for the full mechanics.
+      See `docs/architecture/harness-self-improvement.md` for the full design.
 
 ### Domain knowledge
 

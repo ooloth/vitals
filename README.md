@@ -119,8 +119,9 @@ Or use GitHub Actions or your favourite other scheduler.
 | Discoveries from running the loops              | [docs/learnings/](docs/learnings/)                     |
 | How to add projects, scan types, debug failures | [docs/playbooks/](docs/playbooks/)                     |
 | Auth strategies by provider                     | [docs/architecture/auth.md](docs/architecture/auth.md) |
-| Scan cadence and entropy management             | [docs/architecture/scan-cadence.md](docs/architecture/scan-cadence.md) |
-| Conventions                                     | [docs/conventions/](docs/conventions/)                 |
+| Scan cadence and entropy management             | [docs/architecture/scan-cadence.md](docs/architecture/scan-cadence.md)                         |
+| Harness self-improvement                        | [docs/architecture/harness-self-improvement.md](docs/architecture/harness-self-improvement.md) |
+| Conventions                                     | [docs/conventions/](docs/conventions/)                                                         |
 | Roadmap                                         | [docs/roadmap.md](docs/roadmap.md)                     |
 
 ---
