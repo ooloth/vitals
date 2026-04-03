@@ -31,7 +31,7 @@
       "name": "Vitals",
       "path": "~/Repos/ooloth/vitals",
       "install": "uv sync --all-extras --reinstall",
-      "tests": "uv run pytest --tb=short -q",
+      "test": "uv run pytest --tb=short -q",
       "scans": [
         {
           "type": "codebase",

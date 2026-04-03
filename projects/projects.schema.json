@@ -15,13 +15,31 @@
       "required": ["id", "name", "scans"],
       "additionalProperties": false,
       "properties": {
-        "id":      { "type": "string", "description": "Unique identifier used in CLI commands" },
-        "name":    { "type": "string", "description": "Human-readable display name" },
-        "path":    { "type": "string", "description": "Absolute or ~ path to the project root (required for codebase scans and fix loop)" },
-        "install": { "type": "string", "description": "Command to install/sync dependencies before running the fix loop" },
-        "checks":  { "type": "string", "description": "Command to run linters/type checkers before running the fix loop" },
-        "tests":   { "type": "string", "description": "Command to run the test suite" },
-        "scans":   {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier used in CLI commands"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name"
+        },
+        "path": {
+          "type": "string",
+          "description": "Absolute or ~ path to the project root (required for codebase scans and fix loop)"
+        },
+        "install": {
+          "type": "string",
+          "description": "Command to install/sync dependencies before running the fix loop"
+        },
+        "check": {
+          "type": "string",
+          "description": "Command to run linters/type checkers before running the fix loop"
+        },
+        "test": {
+          "type": "string",
+          "description": "Command to run the test suite"
+        },
+        "scans": {
           "type": "array",
           "minItems": 1,
           "items": {
@@ -37,7 +55,7 @@
       "type": "object",
       "required": ["type", "normal", "flag", "ignore"],
       "properties": {
-        "type":   { "type": "string" },
+        "type": { "type": "string" },
         "normal": {
           "type": "array",
           "minItems": 1,
@@ -65,13 +83,19 @@
           "required": ["type", "source", "dataset", "token"],
           "additionalProperties": false,
           "properties": {
-            "type":    { "const": "logs" },
-            "source":  { "type": "string", "enum": ["axiom", "google_cloud_logging", "grafana_loki"] },
+            "type": { "const": "logs" },
+            "source": {
+              "type": "string",
+              "enum": ["axiom", "google_cloud_logging", "grafana_loki"]
+            },
             "dataset": { "type": "string" },
-            "token":   { "type": "string", "description": "Env var reference e.g. ${AXIOM_TOKEN}" },
-            "normal":  {},
-            "flag":    {},
-            "ignore":  {}
+            "token": {
+              "type": "string",
+              "description": "Env var reference e.g. ${AXIOM_TOKEN}"
+            },
+            "normal": {},
+            "flag": {},
+            "ignore": {}
           }
         }
       ]
@@ -84,9 +108,9 @@
           "required": ["type"],
           "additionalProperties": false,
           "properties": {
-            "type":   { "const": "codebase" },
+            "type": { "const": "codebase" },
             "normal": {},
-            "flag":   {},
+            "flag": {},
             "ignore": {}
           }
         }
