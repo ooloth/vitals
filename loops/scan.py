@@ -1,38 +1,9 @@
 import json
 import sys
-from pathlib import Path
 
-from loops.common import ROOT, agent, gh, load_project
+from loops.common import agent, load_project, post_issues, project_context, open_issue_titles
 
 BACKPRESSURE_CAP = 10
-
-
-def project_context(project_id: str) -> str:
-    project = load_project(project_id)
-    context_path = ROOT / f"projects/{project_id}/context.md"
-    context = context_path.read_text() if context_path.exists() else ""
-    return f"Project config:\n{json.dumps(project, indent=2)}\n\nProject context:\n{context}"
-
-
-def open_issue_titles() -> set[str]:
-    result = gh("issue", "list", "--label", "agent", "--json", "title", "--limit", "100")
-    return {i["title"] for i in json.loads(result.stdout)}
-
-
-def post_issues(issues: list[dict], dry_run: bool = False) -> None:
-    existing = set() if dry_run else open_issue_titles()
-    for issue in issues:
-        title = issue["title"]
-        if title in existing:
-            print(f"[scan] skipping duplicate: {title!r}")
-            continue
-        if dry_run:
-            print(f"\n[dry-run] would post issue:")
-            print(f"  title: {title}")
-            print(f"  label: {issue.get('label', 'sev:medium')}")
-            print(f"  body:\n{issue['body']}\n")
-        else:
-            gh("issue", "create", "--title", title, "--body", issue["body"], "--label", issue.get("label", "sev:medium"), capture=False)
 
 
 def run_scan(project_id: str, scan_type: str = "logs", max_rounds: int = 5, dry_run: bool = False) -> None:

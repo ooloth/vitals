@@ -1,96 +1,24 @@
 import json
-import shlex
-import subprocess
 import sys
 from pathlib import Path
 
-from loops.common import ROOT, agent, gh, git, load_project
+from loops.common import (
+    ROOT,
+    agent,
+    commit_if_dirty,
+    get_diff,
+    git,
+    issue_context,
+    load_project,
+    next_open_issue,
+    open_pr,
+    prepare_branch,
+    run_command,
+    run_tests,
+)
 
 IMPLEMENT_TOOLS = ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 REVIEW_TOOLS = ["Read", "Glob", "Grep"]
-
-
-def run_command(cmd: str, project_path: Path, label: str) -> None:
-    print(f"[fix] {label}...", flush=True)
-    result = subprocess.run(shlex.split(cmd), cwd=project_path)
-    if result.returncode != 0:
-        raise RuntimeError(f"{label} failed (exit {result.returncode})")
-
-
-def next_open_issue() -> int | None:
-    result = gh("issue", "list", "--label", "agent", "--json", "number", "--limit", "1")
-    issues = json.loads(result.stdout)
-    return issues[0]["number"] if issues else None
-
-
-def issue_context(issue_number: int) -> str:
-    return gh("issue", "view", str(issue_number), "--json", "number,title,body,labels").stdout
-
-
-def default_branch(project_path: Path) -> str:
-    result = git("rev-parse", "--abbrev-ref", "origin/HEAD", cwd=project_path, check=False)
-    ref = result.stdout.strip()  # e.g. "origin/main" or "origin/trunk"
-    if ref and "/" in ref:
-        return ref.split("/", 1)[1]
-    return "main"
-
-
-def get_diff(branch: str, project_path: Path) -> str:
-    base = default_branch(project_path)
-    result = git("diff", f"{base}...{branch}", cwd=project_path)
-    return result.stdout.strip() or "(no diff — branch may not exist or no changes were made)"
-
-
-def run_tests(project_path: Path, test_cmd: str | None = None) -> dict:
-    if test_cmd:
-        result = subprocess.run(shlex.split(test_cmd), capture_output=True, text=True, cwd=project_path)
-        return {"ran": True, "passed": result.returncode == 0, "output": (result.stdout + result.stderr).strip()}
-    has_tests = (project_path / "tests").exists() or (project_path / "pytest.ini").exists()
-    if not has_tests:
-        return {"ran": False, "reason": "no test suite found"}
-    venv_python = project_path / ".venv" / "bin" / "python"
-    python = str(venv_python) if venv_python.exists() else "python3"
-    result = subprocess.run(
-        [python, "-m", "pytest", "--tb=short", "-q"],
-        capture_output=True, text=True, cwd=project_path,
-    )
-    return {"ran": True, "passed": result.returncode == 0, "output": (result.stdout + result.stderr).strip()}
-
-
-def prepare_branch(issue_number: int, project_path: Path) -> str:
-    """Ensure working tree is clean, pull latest, and create the fix branch."""
-    if git("status", "--porcelain", cwd=project_path).stdout.strip():
-        raise RuntimeError(
-            f"Working tree in {project_path} is dirty — resolve before running fix loop"
-        )
-
-    branch = f"fix/issue-{issue_number}"
-    if git("branch", "--list", branch, cwd=project_path).stdout.strip():
-        raise RuntimeError(
-            f"Branch {branch!r} already exists in {project_path} — delete it manually before retrying"
-        )
-
-    base = default_branch(project_path)
-    git("checkout", base, cwd=project_path)
-    git("pull", "--ff-only", cwd=project_path)
-    git("checkout", "-b", branch, cwd=project_path)
-    print(f"[fix] created branch {branch!r} from {base}", flush=True)
-    return branch
-
-
-def commit_if_dirty(message: str, project_path: Path) -> bool:
-    """Stage and commit any uncommitted changes. Returns True if a commit was made."""
-    if not git("status", "--porcelain", cwd=project_path).stdout.strip():
-        return False
-    git("add", "-A", cwd=project_path)
-    git("commit", "-m", message, cwd=project_path)
-    print(f"[fix] committed: {message!r}", flush=True)
-    return True
-
-
-def open_pr(branch: str, impl: dict, project_path: Path) -> None:
-    git("push", "-u", "origin", branch, cwd=project_path, capture=False)
-    gh("pr", "create", "--title", impl["pr_title"], "--body", impl["pr_body"], "--head", branch, capture=False)
 
 
 def run_fix(issue_number: int | None = None, project_id: str | None = None, max_rounds: int = 10) -> None:

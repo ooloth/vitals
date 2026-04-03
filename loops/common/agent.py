@@ -1,18 +1,9 @@
 import json
 import subprocess
 import tempfile
-import tomllib
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent
-
-
-def git(*args: str, cwd: Path, capture: bool = True, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", *args], capture_output=capture, text=True, check=check, cwd=cwd)
-
-
-def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(["gh", *args], capture_output=capture, text=True, check=check)
+from loops.common.projects import ROOT
 
 
 def _print_event(event: dict) -> None:
@@ -77,13 +68,3 @@ def agent(prompt_file: str, context: str, max_turns: int = 20, allowed_tools: li
     result = json.loads(output_file.read_text())
     output_file.unlink()
     return result
-
-
-def load_project(project_id: str) -> dict:
-    config = tomllib.loads((ROOT / "projects/projects.toml").read_text())
-    project = next((p for p in config["projects"] if p["id"] == project_id), None)
-    if project is None:
-        raise ValueError(f"Project '{project_id}' not found in projects.toml")
-    if "path" in project:
-        project["path"] = str(Path(project["path"]).expanduser().resolve())
-    return project
