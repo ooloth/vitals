@@ -46,23 +46,44 @@ def project_context(project_id: str) -> str:
     return f"Project config:\n{json.dumps(project, indent=2)}\n\nProject context:\n{context}"
 
 
+BACKPRESSURE_CAP = 10
+
+
+def open_issue_titles() -> set[str]:
+    result = subprocess.run(
+        ["gh", "issue", "list", "--label", "agent", "--json", "title", "--limit", "100"],
+        capture_output=True, text=True, check=True,
+    )
+    return {i["title"] for i in json.loads(result.stdout)}
+
+
 def post_issues(issues: list[dict], dry_run: bool = False) -> None:
+    existing = set() if dry_run else open_issue_titles()
     for issue in issues:
+        title = issue["title"]
+        if title in existing:
+            print(f"[scan] skipping duplicate: {title!r}")
+            continue
         if dry_run:
             print(f"\n[dry-run] would post issue:")
-            print(f"  title: {issue['title']}")
+            print(f"  title: {title}")
             print(f"  label: {issue.get('label', 'sev:medium')}")
             print(f"  body:\n{issue['body']}\n")
         else:
             subprocess.run([
                 "gh", "issue", "create",
-                "--title", issue["title"],
+                "--title", title,
                 "--body", issue["body"],
                 "--label", issue.get("label", "sev:medium"),
             ], check=True)
 
 
 def run_scan(project_id: str, scan_type: str = "logs", max_rounds: int = 5, dry_run: bool = False) -> None:
+    if not dry_run:
+        open_count = len(open_issue_titles())
+        if open_count >= BACKPRESSURE_CAP:
+            print(f"[scan] {open_count} open issues pending fix — skipping scan (backpressure cap: {BACKPRESSURE_CAP})")
+            return
     context = project_context(project_id)
 
     print(f"[scan] {project_id}/{scan_type}: finding problems...", flush=True)
