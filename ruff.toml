@@ -1,0 +1,42 @@
+# See: https://docs.astral.sh/ruff/configuration/
+# See: https://docs.astral.sh/ruff/settings/
+# See: https://docs.astral.sh/ruff/rules/
+
+line-length = 100
+target-version = "py314"
+
+[format]
+docstring-code-format = true
+
+[lint]
+select = ["ALL"]
+ignore = [
+    "COM812", # missing-trailing-comma                    – conflicts with ruff formatter
+    "D104",   # undocumented-public-package               – __init__.py files are re-exports, not prose
+    "D105",   # undocumented-magic-method                 – semantics obvious from method name
+    "D2",     # pydocstyle formatting rules               – "exists" is enough; don't police style
+    "D3",     # pydocstyle content rules                  – "exists" is enough; don't police style
+    "D4",     # pydocstyle section rules                  – "exists" is enough; don't police style
+    "ISC001", # single-line-implicit-string-concatenation – conflicts with ruff formatter
+    "TC001",  # typing-only-first-party-import            – unnecessary on Python 3.14+ (PEP 649)
+    "TC002",  # typing-only-third-party-import            – unnecessary on Python 3.14+ (PEP 649)
+    "TC003",  # typing-only-standard-library-import       – unnecessary on Python 3.14+ (PEP 649)
+]
+fixable = ["ALL"]
+unfixable = []
+
+[lint.per-file-ignores]
+"**/tests/**" = [
+    "ARG001",  # unused-function-argument    – pytest fixtures appear unused
+    "D",       # pydocstyle                  – test names are the documentation
+    "PLR2004", # magic-value-comparison      – assert count == 3 is fine
+    "S101",    # assert                      – assert is the point of tests
+    "S106",    # hardcoded-password-func-arg – test fixtures pass literal tokens
+    "SLF001",  # private-member-access       – white-box testing accesses privates
+]
+
+[lint.isort]
+known-first-party = ["loops"]
+
+[lint.flake8-tidy-imports.banned-api]
+"typing.TYPE_CHECKING".msg = "Unnecessary on Python 3.14+. Use regular imports instead."
