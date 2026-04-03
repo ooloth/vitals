@@ -16,23 +16,29 @@ deliberately decoupled.
 
 ---
 
+## Setup
+
+```bash
+uv sync --all-extras
+```
+
 ## Running
 
 ```bash
 # scan a project for codebase improvements (dry run — prints without posting)
-python run.py scan vitals --type codebase --dry-run
+uv run python run.py scan vitals --type codebase --dry-run
 
 # scan and post issues
-python run.py scan vitals --type codebase
+uv run python run.py scan vitals --type codebase
 
-# fix a specific issue
-python run.py fix --issue 3
+# fix a specific issue in a specific project
+uv run python run.py fix --issue 3 --project vitals
 
 # fix the next open issue labelled 'agent'
-python run.py fix
+uv run python run.py fix
 
 # with secrets from 1Password
-op run --env-file=secrets.env -- python run.py scan pilots --type logs
+op run --env-file=secrets.env -- uv run python run.py scan pilots --type logs
 ```
 
 ---
@@ -129,7 +135,7 @@ point, not the ceiling.
 
 ## Prerequisites
 
-- Python 3.11+
+- `uv` (`brew install uv`) — manages the Python environment and dependencies
 - `claude` CLI (`npm install -g @anthropic-ai/claude-code`)
 - `gh` CLI (GitHub issues and PRs)
 - `op` CLI (1Password, for secrets injection)

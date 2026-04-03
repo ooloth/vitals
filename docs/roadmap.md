@@ -34,11 +34,21 @@
 ### Fix loop reliability
 
 - [ ] Validate fix loop end-to-end on issues #1–4 (dogfood)
-- [ ] Harden reviewer: sees actual git diff (not just implementation summary),
+- [x] Harden reviewer: sees actual git diff (not just implementation summary),
       runs existing tests, reports results explicitly
+- [x] Coordinator owns branch lifecycle: dirty-tree check, pull latest,
+      create branch, deterministic commit after implement, restore original
+      branch on exit, push before PR
+- [x] Per-project install/checks/tests commands in projects.toml; coordinator
+      runs them to verify clean state before starting work
 - [ ] Staleness scan: new scan type that batch reviews open agent-labelled
       issues against the current codebase, comments and closes stale ones
       before the fix loop picks them up (`--type staleness`)
+- [ ] Local branch cleanup after PR is merged (roadmap only — manual for now)
+- [ ] Learning step: post-loop reflection prompt that examines the run and
+      outputs suggested improvements to vitals' own prompts/coordinator as
+      GitHub issues; open question: how to capture the full run transcript
+      for the reflection agent to read (tee stdout to a log file?)
 
 ## Phase 2: Schedulable scans
 
