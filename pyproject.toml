@@ -5,3 +5,9 @@ requires-python = ">=3.11"
 
 [project.optional-dependencies]
 dev = ["pytest"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.9",
+    "ty>=0.0.28",
+]
