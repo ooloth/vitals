@@ -17,11 +17,13 @@ def agent(prompt_file: str, context: str, max_turns: int = 15) -> dict:
         f"Do not include the JSON in your text response."
     )
     print(f"\n{'─' * 60}", flush=True)
-    subprocess.run(
+    result = subprocess.run(
         ["claude", "-p", full_prompt, "--max-turns", str(max_turns)],
         cwd=ROOT,
     )
     print(f"{'─' * 60}", flush=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"claude subprocess exited with return code {result.returncode}")
     if not output_file.exists():
         raise RuntimeError(f"Agent did not write output to {output_file}")
     result = json.loads(output_file.read_text())
