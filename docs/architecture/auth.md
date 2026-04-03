@@ -1,6 +1,6 @@
 # Auth Strategies by Provider
 
-Vitals runs locally as a CLI tool. Auth is handled at the process level via
+Agency runs locally as a CLI tool. Auth is handled at the process level via
 `op run --env-file=secrets.env -- python run.py <cmd>`, which injects secrets
 as env vars before the process starts. No secrets are stored on disk or in code.
 

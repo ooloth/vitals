@@ -10,8 +10,8 @@
 
 ```sh
 # Clone and enter the repo
-git clone https://github.com/ooloth/vitals.git
-cd vitals
+git clone https://github.com/ooloth/agency.git
+cd agency
 
 # Install dependencies (overwriting any existing ones)
 uv sync --all-extras --reinstall

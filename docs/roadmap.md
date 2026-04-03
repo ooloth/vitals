@@ -6,7 +6,7 @@
 - [x] Scan loop: find → triage → draft issues → review until ready → post
 - [x] Fix loop: implement → review → revise with feedback → open PR
 - [x] Dry-run mode for scan
-- [x] End-to-end scan validated (codebase scan of vitals itself)
+- [x] End-to-end scan validated (codebase scan of agency itself)
 
 ### Prompt quality (from agency audit)
 
@@ -60,7 +60,7 @@
       before the fix loop picks them up (`--type staleness`)
 - [ ] Local branch cleanup after PR is merged (roadmap only — manual for now)
 - [ ] Learning step: post-loop reflection prompt that examines the run and
-      outputs suggested improvements to vitals' own prompts/coordinator as
+      outputs suggested improvements to agency's own prompts/coordinator as
       GitHub issues; open question: how to capture the full run transcript
       for the reflection agent to read (tee stdout to a log file?)
 

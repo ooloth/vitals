@@ -1,4 +1,4 @@
-"""Shared logger for the vitals agent loops."""
+"""Shared logger for the agency agent loops."""
 
 import logging
 import sys
@@ -10,4 +10,4 @@ logging.basicConfig(
     force=True,
 )
 
-log = logging.getLogger("vitals")
+log = logging.getLogger(__name__)

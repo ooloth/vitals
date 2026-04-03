@@ -28,9 +28,9 @@
       ]
     },
     {
-      "id": "vitals",
-      "name": "Vitals",
-      "path": "~/Repos/ooloth/vitals",
+      "id": "agency",
+      "name": "Agency",
+      "path": "~/Repos/ooloth/agency-1",
       "install": "uv sync --all-extras --reinstall",
       "test": "uv run pytest --tb=short -q",
       "scans": [

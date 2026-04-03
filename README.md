@@ -1,4 +1,10 @@
-# vitals
+# agency
+
+> [!CAUTION]
+> **Agency is a research project. If your name is not Michael Uloth, do not use it.**
+>
+> This software may change or break without notice. No support or warranty is provided.
+> Use at your own risk.
 
 Autonomous agent loops that scan projects for problems and fix them.
 
@@ -31,13 +37,13 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ```bash
 # scan a project (dry run — prints issues without posting)
-uv run python run.py scan vitals --type codebase --dry-run
+uv run python run.py scan agency --type codebase --dry-run
 
 # scan and post issues
-uv run python run.py scan vitals --type codebase
+uv run python run.py scan agency --type codebase
 
 # fix a specific issue in a specific project
-uv run python run.py fix --issue 3 --project vitals
+uv run python run.py fix --issue 3 --project agency
 
 # fix the next open issue labelled 'agent'
 uv run python run.py fix
