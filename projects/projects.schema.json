@@ -43,20 +43,18 @@
         "scans": {
           "type": "array",
           "minItems": 1,
-          "items": {
-            "oneOf": [
-              { "$ref": "#/$defs/logs_scan" },
-              { "$ref": "#/$defs/codebase_scan" }
-            ]
-          }
+          "items": { "$ref": "#/$defs/scan" }
         }
       }
     },
-    "scan_base": {
+    "scan": {
       "type": "object",
       "required": ["type", "normal", "flag", "ignore"],
       "properties": {
-        "type": { "type": "string" },
+        "type": {
+          "type": "string",
+          "description": "Path to the prompt file under prompts/scan/sources/, e.g. logs/error-spikes or codebase/dead-code"
+        },
         "normal": {
           "type": "array",
           "minItems": 1,
@@ -73,49 +71,21 @@
           "type": "array",
           "items": { "type": "string" },
           "description": "Known noise patterns to skip — can be empty"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["axiom", "google_cloud_logging", "grafana_loki"],
+          "description": "Log data source — required for logs/* scan types"
+        },
+        "dataset": {
+          "type": "string",
+          "description": "Dataset or log group name — required for logs/* scan types"
+        },
+        "token": {
+          "type": "string",
+          "description": "Env var reference e.g. ${AXIOM_TOKEN} — required for logs/* scan types"
         }
       }
-    },
-    "logs_scan": {
-      "allOf": [
-        { "$ref": "#/$defs/scan_base" },
-        {
-          "type": "object",
-          "required": ["type", "source", "dataset", "token"],
-          "additionalProperties": false,
-          "properties": {
-            "type": { "const": "logs" },
-            "source": {
-              "type": "string",
-              "enum": ["axiom", "google_cloud_logging", "grafana_loki"]
-            },
-            "dataset": { "type": "string" },
-            "token": {
-              "type": "string",
-              "description": "Env var reference e.g. ${AXIOM_TOKEN}"
-            },
-            "normal": {},
-            "flag": {},
-            "ignore": {}
-          }
-        }
-      ]
-    },
-    "codebase_scan": {
-      "allOf": [
-        { "$ref": "#/$defs/scan_base" },
-        {
-          "type": "object",
-          "required": ["type"],
-          "additionalProperties": false,
-          "properties": {
-            "type": { "const": "codebase" },
-            "normal": {},
-            "flag": {},
-            "ignore": {}
-          }
-        }
-      ]
     }
   }
 }

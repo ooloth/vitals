@@ -6,7 +6,7 @@
       "name": "Pilots",
       "scans": [
         {
-          "type": "logs",
+          "type": "logs/error-spikes",
           "source": "axiom",
           "dataset": "pilots",
           "token": "${AXIOM_TOKEN}",
@@ -35,7 +35,7 @@
       "test": "uv run pytest --tb=short -q",
       "scans": [
         {
-          "type": "codebase",
+          "type": "codebase/dead-code",
           "normal": [
             "Python coordinator delegates all LLM work to claude -p subprocesses",
             "loops/common/ holds shared infrastructure; fix.py and scan.py are pure orchestration",

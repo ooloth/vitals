@@ -12,4 +12,4 @@ def test_agent_raises_on_nonzero_returncode(tmp_path):
 
     with patch("loops.common.agent.subprocess.run", return_value=failed):
         with pytest.raises(RuntimeError, match="claude subprocess exited with return code 1"):
-            agent("prompts/scans/codebase.md", "some context")
+            agent("prompts/scan/sources/codebase/dead-code.md", "some context")

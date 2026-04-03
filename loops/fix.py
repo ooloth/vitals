@@ -48,7 +48,7 @@ def run_fix(issue_number: int | None = None, project_id: str | None = None, max_
 
         for round_n in range(max_rounds):
             print(f"[fix] round {round_n + 1}: implementing...", flush=True)
-            impl = agent("prompts/implement.md", issue, allowed_tools=IMPLEMENT_TOOLS)
+            impl = agent("prompts/fix/implement.md", issue, allowed_tools=IMPLEMENT_TOOLS)
 
             commit_if_dirty(impl.get("pr_title", f"fix: issue #{issue_number}"), project_path)
 
@@ -72,7 +72,7 @@ def run_fix(issue_number: int | None = None, project_id: str | None = None, max_
             })
 
             print(f"[fix] round {round_n + 1}: reviewing...", flush=True)
-            reviewed = agent("prompts/review.md", review_context, allowed_tools=REVIEW_TOOLS)
+            reviewed = agent("prompts/fix/review.md", review_context, allowed_tools=REVIEW_TOOLS)
 
             if reviewed["approved"]:
                 open_pr(branch, impl, project_path)

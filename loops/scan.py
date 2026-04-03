@@ -20,31 +20,31 @@ def run_scan(project_id: str, scan_type: str = "logs", max_rounds: int = 5, dry_
     context = scan_context(project, scan)
 
     print(f"[scan] {project_id}/{scan_type}: finding problems...", flush=True)
-    raw = agent(f"prompts/scans/{scan_type}.md", context)
+    raw = agent(f"prompts/scan/sources/{scan_type}.md", context)
 
     if not raw.get("findings"):
         print(f"[scan] {project_id}/{scan_type}: nothing to report")
         return
 
     print(f"[scan] {len(raw['findings'])} finding(s) — triaging...", flush=True)
-    clustered = agent("prompts/triage.md", json.dumps(raw))
+    clustered = agent("prompts/scan/triage.md", json.dumps(raw))
 
     if not clustered.get("clusters"):
         print(f"[scan] {project_id}/{scan_type}: no actionable clusters after triage")
         return
 
     print(f"[scan] {len(clustered['clusters'])} cluster(s) — drafting issues...", flush=True)
-    drafted = agent("prompts/draft-issues.md", json.dumps(clustered))
+    drafted = agent("prompts/scan/draft-issues.md", json.dumps(clustered))
 
     for round_n in range(max_rounds):
         print(f"[scan] reviewing issues (round {round_n + 1})...", flush=True)
-        reviewed = agent("prompts/review-issues.md", json.dumps(drafted))
+        reviewed = agent("prompts/scan/review-issues.md", json.dumps(drafted))
         if reviewed["ready"]:
             post_issues(reviewed["issues"], dry_run=dry_run)
             print(f"[scan] {project_id}/{scan_type}: {'would post' if dry_run else 'posted'} {len(reviewed['issues'])} issue(s)")
             return
         print(f"[scan] round {round_n + 1}: needs revision — {reviewed['feedback']}")
-        drafted = agent("prompts/draft-issues.md", json.dumps(reviewed))
+        drafted = agent("prompts/scan/draft-issues.md", json.dumps(reviewed))
 
     print(f"[escalate] {project_id}/{scan_type}: issues did not converge after {max_rounds} rounds", file=sys.stderr)
     sys.exit(1)
