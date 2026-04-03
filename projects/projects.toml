@@ -1,0 +1,32 @@
+# projects.toml — registry of monitored projects
+#
+# Defines which projects are scanned, what to scan for, and where data lives.
+# Secrets are referenced as env var names injected via:
+#   op run --env-file=secrets.env -- python run.py scan <id>
+
+[[projects]]
+id = "pilots"
+name = "Pilots"
+scans = ["logs"]
+
+  [[projects.logs]]
+  source = "axiom"
+  dataset = "pilots"
+  token = "${AXIOM_TOKEN}"
+
+[[projects]]
+id = "vitals"
+name = "Vitals"
+scans = ["codebase"]
+path = "/Users/michael/Repos/ooloth/vitals"
+
+# ── Reference configs (uncomment when credentials are available) ──────────────
+
+# [[projects]]
+# id = "my-work-api"
+# name = "My Work API"
+# scans = ["logs", "codebase"]
+#
+#   [[projects.logs]]
+#   source = "google_cloud_logging"
+#   project_id = "my-gcp-project-123"
