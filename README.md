@@ -111,12 +111,20 @@ Or use GitHub Actions or your favourite other scheduler.
 
 ## Docs
 
-| What                                            | Where                       |
-| ----------------------------------------------- | --------------------------- |
+| What                                            | Where                                                  |
+| ----------------------------------------------- | ------------------------------------------------------ |
 | Philosophy and goals                            | [docs/philosophy.md](docs/philosophy.md)               |
 | Design decisions                                | [docs/decisions/](docs/decisions/)                     |
 | Invariants to uphold                            | [docs/rules.md](docs/rules.md)                         |
 | Discoveries from running the loops              | [docs/learnings/](docs/learnings/)                     |
 | How to add projects, scan types, debug failures | [docs/playbooks/](docs/playbooks/)                     |
 | Auth strategies by provider                     | [docs/architecture/auth.md](docs/architecture/auth.md) |
+| Scan cadence and entropy management             | [docs/architecture/scan-cadence.md](docs/architecture/scan-cadence.md) |
+| Conventions                                     | [docs/conventions/](docs/conventions/)                 |
 | Roadmap                                         | [docs/roadmap.md](docs/roadmap.md)                     |
+
+---
+
+## Inspiration
+
+<!-- TODO: credit workos/case here -->

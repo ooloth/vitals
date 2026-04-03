@@ -28,6 +28,8 @@ op run --env-file=secrets.env -- python3 run.py scan <project-id>
 | Design decisions                                | [docs/decisions/](docs/decisions/)                     |
 | Roadmap                                         | [docs/roadmap.md](docs/roadmap.md)                     |
 | Auth strategies by provider                     | [docs/architecture/auth.md](docs/architecture/auth.md) |
+| Scan cadence and entropy management             | [docs/architecture/scan-cadence.md](docs/architecture/scan-cadence.md) |
+| Conventions                                     | [docs/conventions/](docs/conventions/)                 |
 | How to add projects, scan types, debug failures | [docs/playbooks/](docs/playbooks/)                     |
 | Discoveries from running the loops              | [docs/learnings/](docs/learnings/)                     |
 | Registered projects and data sources            | [projects/projects.json](projects/projects.json)       |
