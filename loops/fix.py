@@ -13,7 +13,14 @@ REVIEW_TOOLS = ["Read", "Glob", "Grep"]
 
 
 def _print_event(event: dict) -> None:
-    """Print a stream-json event from claude in a readable format."""
+    """Print a stream-json event from claude in a readable format.
+
+    The --output-format stream-json schema is inferred from observed behaviour,
+    not from formal documentation. This parser is best-effort: unknown event
+    types and content block types are silently ignored. If tool calls or text
+    are not appearing as expected, temporarily switch agent() to subprocess.run
+    without --output-format to see the raw output and compare.
+    """
     etype = event.get("type")
     if etype == "assistant":
         for block in event.get("message", {}).get("content", []):

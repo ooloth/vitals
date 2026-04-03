@@ -85,6 +85,41 @@ process environment for the lifetime of the run.
 
 ---
 
+## Coordinator restores original branch on exit
+
+**Decision**: `run_fix` captures the current branch before doing any work and
+restores it in a `finally` block, whether the run succeeds, fails, or
+escalates.
+
+**Why**: `prepare_branch` calls `git checkout <base>` and
+`git checkout -b fix/issue-<N>` as side effects. Without cleanup, every fix
+run leaves the repo on the fix branch. The user's environment is modified
+without their knowledge. The `finally` block makes the coordinator's git
+footprint zero-net: you get back to where you started regardless of what
+happened.
+
+**Implication**: Never remove the `finally` block from `run_fix` thinking it
+is unnecessary. It is the only thing that prevents the repo from being left on
+a fix branch after an unattended run.
+
+---
+
+## Per-role `--allowedTools` for agent subprocesses
+
+**Decision**: The implement agent is granted `Bash Read Write Edit Glob Grep`.
+The reviewer is granted `Read Glob Grep` only.
+
+**Why**: Granting every tool to every agent is both unnecessary and risky. The
+reviewer has no legitimate reason to write files or run commands — restricting
+it to read-only tools enforces this at the permission layer, not just by prompt
+instruction. The implement agent needs `Bash` for git operations (see learnings
+for why `--allowedTools` is required at all in `-p` mode).
+
+**Boundary**: If a new agent step is added, its tool list should be the
+minimum required for its job. Start restrictive and expand if needed.
+
+---
+
 ## Prompts as the primary extension point
 
 **Decision**: Adding a new scan type means adding a `prompts/scans/<type>.md`
