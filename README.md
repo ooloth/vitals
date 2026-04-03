@@ -9,20 +9,18 @@
 Autonomous agent loops that scan projects for problems and fix them.
 
 ```mermaid
-flowchart TB
+flowchart LR
     subgraph scan["Scan loop (read-only)"]
-        direction LR
         S1[find] --> S2[triage] --> S3[draft] --> S4[review]
+        S4 -.->|revise| S3
     end
-    S4 -.->|revise| S3
     S4 -->|ready| issues[(GitHub issues)]
     issues --> F1
     subgraph fix["Fix loop (write)"]
-        direction LR
         F1[implement] --> F2[review]
+        F2 -.->|revise| F1
         F2 -->|approved| F3[open PR]
     end
-    F2 -.->|revise| F1
 ```
 
 **Scan** runs read-only: queries logs, reads codebases, or checks whatever
