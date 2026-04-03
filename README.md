@@ -6,8 +6,6 @@
 > This software may change or break without notice. No support or warranty is provided.
 > Use at your own risk.
 
-Autonomous agent loops that scan projects for problems and fix them.
-
 ```mermaid
 flowchart LR
     subgraph scan["Scan loop (read-only)"]
@@ -23,17 +21,17 @@ flowchart LR
     end
 ```
 
-**Scan** runs are read-only: they query logs, read codebases, or check whatever else you can think
-of to configure — they surface anything worth acting on, and post well-formed GitHub issues.
+Agency contains autonomous agent loops that scan projects for problems and then fix them:
 
-**Fix** runs write: they pick up open issues, implement solutions in fresh agent subprocesses,
-and open PRs after a review pass. GitHub issues are the handoff mechanism — scan and fix are
-deliberately decoupled.
-
-The loops are fixed. What varies is the scan configuration. Adding a new scan type is adding a
-prompt file and a scan block in `projects.json`. Each project configures each scan type with its
-own calibration — what's normal, what to flag, what to ignore — while the same loop machinery
-handles the rest.
+- **Scan runs are read-only**: they query logs, read codebases, or check whatever else you can think
+  of to configure — they surface anything worth acting on, and post well-formed GitHub issues
+- **Fix runs write**: they pick up open issues, implement solutions in fresh agent subprocesses,
+  and open PRs after a review pass. GitHub issues are the handoff mechanism — scan and fix are
+  deliberately decoupled
+- **The loops are fixed:** what varies are the scan configurations. Adding a new scan type is adding a
+  prompt file and a scan block in `projects.json`. Scans configurations can be applied to multiple
+  projects or calibrated for just one — what's normal, what to flag, what to ignore — while the
+  same loop machinery handles the rest.
 
 ---
 
