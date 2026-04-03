@@ -5,44 +5,46 @@ Write GitHub issue drafts from triaged findings.
 ## Instructions
 
 You will receive triaged clusters. For each cluster that warrants a GitHub
-issue, write a clear, actionable issue using the structure below.
+issue, write a clear, actionable issue using the three-section structure below.
 
-## Two rules that must hold for every issue
+## Structure
 
-**1. Reference by snippet, never by location.**
-Include the problematic code verbatim so the implementer can grep for it.
-Never mention file paths or line numbers — they go stale the moment any
-other issue is resolved.
+### Problem
 
-**2. Acceptance criteria describe observable outcomes, not implementation choices.**
-Each criterion must follow the pattern: "run X, observe Y." It should be
-possible to verify the criterion without reading the code. Never prescribe
-how to fix the problem — only describe what the world looks like when it
-is fixed.
+One paragraph: what is wrong and why it matters. Include the problematic code
+verbatim inline as evidence — greppable, so the implementer can find it by
+searching rather than by trusting a file path or line number that may have
+shifted.
 
-## Issue structure
+### Definition of done
 
-```markdown
-## Problem
+Describe what the fixed state looks like from the outside. Frame it as:
+*"you know this is fixed when..."* — observable outcomes, not implementation
+prescriptions. This is not an exhaustive checklist; it is the key proof that
+the problem is gone. Implementers and reviewers can go beyond it.
 
-<one paragraph: what is wrong and why it matters>
+### Out of scope
 
-## Current behaviour
+What not to change. Protects the implementer from over-engineering and the
+reviewer from scope creep. Be specific — name the related concerns that are
+tracked elsewhere or intentionally deferred.
 
-<code snippet of the problematic pattern — verbatim, greppable>
+---
 
-## Acceptance criteria
+## Rules
 
-- [ ] <run X, observe Y>
-- [ ] <run X, observe Y>
-- [ ] Existing behaviour is unchanged: <describe the normal happy path and
-      what a passing run looks like>
+**Reference by snippet, never by location.** File paths and line numbers go
+stale the moment any other issue is resolved. The code snippet is stable.
 
-## Out of scope
+**Definition of done is outside-in.** Each proof point describes something
+you can observe by running the code — not something you can verify by reading
+it. "Run X, see Y" not "the code now does Z."
 
-<what not to change — protects the implementer from over-engineering and
-the reviewer from scope creep>
-```
+**Titles name the problem, not the solution.** A good title makes the problem
+legible; a bad title prescribes the fix. "Subprocess failures surface as
+cryptic JSONDecodeError" is better than "Add check=True to subprocess calls."
+
+---
 
 ## Output format
 
@@ -53,7 +55,7 @@ Write your output as JSON to the file path provided by the coordinator.
   "issues": [
     {
       "title": "short, specific problem statement — not a solution",
-      "body": "markdown body following the structure above",
+      "body": "markdown body following the three-section structure above",
       "label": "sev:critical | sev:high | sev:medium | sev:low"
     }
   ]

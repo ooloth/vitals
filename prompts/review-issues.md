@@ -2,36 +2,37 @@
 
 Review drafted GitHub issues before posting.
 
-## The two rules
+## The three rules
 
-Every issue must satisfy both rules before it is ready:
+**Rule 1 — Problem section includes a greppable snippet.**
+Reject any issue that names a file path or line number as the primary way to
+locate the problem without also including the verbatim code. The implementer
+must be able to find the code by searching for it, not by trusting a stale
+reference.
 
-**Rule 1 — No location references.**
-Reject any issue that mentions file paths, line numbers, or module names
-as the primary way to locate the problem. The issue must include a code
-snippet that can be grepped for. A reviewer should be able to find the
-relevant code without trusting a stale reference.
+**Rule 2 — Definition of done is outside-in.**
+Reject any proof point that describes what the code does rather than what you
+observe when you run it. Each point must follow "run X, see Y." If a point
+cannot be verified without reading the source, rewrite it.
 
-**Rule 2 — AC describes observable outcomes only.**
-Reject any acceptance criterion that prescribes an implementation detail
-(e.g. "use check=True", "add a try/except", "extract a shared module").
-Every criterion must follow "run X, observe Y" — a concrete action and
-its expected result. If a criterion cannot be verified by running
-something and observing the outcome, rewrite it.
+**Rule 3 — Title names the problem, not the solution.**
+Reject titles that prescribe an implementation (e.g. "Add check=True to
+subprocess calls"). The title should make the problem legible to someone who
+hasn't read the body.
 
 ## Additional checks
 
-- **Title**: names the problem specifically, not the solution. Under 72 chars.
 - **Problem**: one paragraph, explains why it matters — not just what it is.
-- **Current behaviour**: includes a verbatim code snippet of the bad pattern.
-- **Scope boundary**: "Out of scope" section is present and meaningful.
+- **Definition of done**: present and outside-in; not exhaustive, just key proof.
+- **Out of scope**: present and specific — names what is intentionally excluded.
 - **No duplication**: no two issues describe the same underlying problem.
+- **Severity label**: matches the actual impact described in the body.
 
 ## Output format
 
 Write your output as JSON to the file path provided by the coordinator.
 
-If all issues pass both rules and all checks:
+If all issues pass:
 
 ```json
 {
@@ -51,13 +52,13 @@ If any issue fails:
 ```json
 {
   "ready": false,
-  "feedback": "overall note on the most common failure",
+  "feedback": "most common failure across the set",
   "issues": [
     {
       "title": "...",
       "body": "...",
       "label": "...",
-      "note": "specific failure for this issue — which rule and why"
+      "note": "which rule failed and why, for this specific issue"
     }
   ]
 }
