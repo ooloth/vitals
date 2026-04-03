@@ -59,39 +59,81 @@
       issues against the current codebase, comments and closes stale ones
       before the fix loop picks them up (`--type staleness`)
 - [ ] Local branch cleanup after PR is merged (roadmap only — manual for now)
-- [ ] Learning step: post-loop reflection prompt that examines the run and
-      outputs suggested improvements to agency's own prompts/coordinator as
-      GitHub issues; open question: how to capture the full run transcript
-      for the reflection agent to read (tee stdout to a log file?)
+- [ ] **Harness self-improvement** (high priority): after each scan or fix run,
+      a reflection step reads the run transcript and appends dated learning
+      entries to `docs/learnings/`. When a class of mistake appears three or
+      more times, the reflection agent proposes an escalation — a change to a
+      prompt, a new rule in `docs/rules.md`, or a new convention — as a GitHub
+      issue for human review before being applied. Auto-applying changes to
+      agent instructions without human review has been shown to hurt
+      performance. At the start of each run, the coordinator injects relevant
+      learnings into the prompt so agents benefit from past observations.
+
+      **What the reflection agent needs:**
+      - The full run transcript (stdout + stderr). Current approach: tee the
+        coordinator's output to a dated log file in `logs/` during the run;
+        pass the log path to the reflection agent after completion.
+      - The prompts that were active during the run (to propose targeted edits).
+      - The existing learnings for this project/scan-type (to detect repeats
+        and avoid duplicating known observations).
+
+      **What it produces:**
+      - New learning entries appended to `docs/learnings/<topic>.md`.
+      - When a pattern repeats 3+ times: a GitHub issue proposing the
+        escalation (prompt edit, new rule, or new convention) for human review.
+
+      **Open questions:**
+      - Log rotation: how many run logs to keep before pruning.
+      - Scoping: inject all learnings or only those relevant to the current
+        scan type / project?
+
+      See `docs/learnings/README.md` for the full mechanics.
 
 ### Domain knowledge
 
-- [ ] Decide where project-specific domain knowledge lives — the knowledge that
-      tells agency not just *what to flag* but *what each project is*: its
+- [ ] Build out domain knowledge docs for each target project — the knowledge
+      that tells agency not just *what to flag* but *what each project is*: its
       architecture, domain concepts, and conventions. Without this, scan agents
       can only pattern-match on generic heuristics; with it, they produce
       findings calibrated to the project's actual shape.
 
-      **Options under consideration:**
+      **Approach (settled):** all domain knowledge lives in agency, not in
+      target repos. workos/case follows this pattern: target-repo architecture
+      docs live in the command center, written for agents working *through* the
+      harness rather than developers working *inside* those repos. Reading
+      foreign `CLAUDE.md` files at runtime is fragile and optimised for the
+      wrong audience.
 
-      - **`CLAUDE.md` in each target repo** — already exists in most projects;
-        readable at scan time; designed for coding agents working *within* the
-        project, not optimized for observation; requires reading foreign repos
-        at runtime
-      - **`docs/projects/<name>.md` in agency** — agency-owned, purpose-written
-        for observation tasks; one file per project; some duplication with what
-        target repos already document
-      - **`skills/<domain>.md` in agency** — reusable domain knowledge organized
-        by concept rather than project (e.g. `skills/auth.md`,
-        `skills/payments.md`); multiple projects can draw on the same skill;
-        separates domain concepts (reusable) from project calibration (already
-        in `projects.json`)
-      - **Hybrid** — `skills/` for shared domain concepts + per-project
-        calibration stays in `projects.json` + target-repo `CLAUDE.md` read
-        opportunistically at scan time
+      **Two-layer structure:**
+      - **`docs/projects/<name>.md`** — per-project: what this project is,
+        how it's structured, what its key abstractions are, what "normal" looks
+        like beyond what `projects.json` calibration already captures
+      - **`docs/skills/<domain>.md`** — reusable domain knowledge shared across
+        projects (e.g. `skills/auth.md` if multiple projects share auth
+        patterns); avoids duplicating the same concepts in every project doc
 
-      The hybrid is likely right, but needs a concrete first case to validate
-      the shape before committing to a structure.
+      **Next step:** write `docs/projects/pilots.md` as the first concrete
+      case to validate the shape before applying it to other projects.
+
+### Rule enforcement
+
+- [ ] Annotate rules in `docs/rules.md` as `[enforced]` or `[advisory]` once
+      mechanical enforcement exists for each. The annotation is only meaningful
+      when it reflects reality: `[enforced]` means the coordinator or a
+      pre-run check will refuse to proceed if the rule is violated; `[advisory]`
+      means a prompt checks it but nothing blocks on it mechanically.
+
+      Some rules are already effectively enforced (JSON schema rejects scan
+      blocks missing `normal`/`flag`/`ignore`; the coordinator checks for
+      output files rather than parsing stdout). Work through `docs/rules.md`
+      rule by rule and add the annotation as each one gets a real gate.
+
+### Conventions enforcement
+
+- [ ] Enforce `CLAUDE.md` section ordering via a prek lint rule: validate that
+      sections appear in stable-first order (identity → rules → architecture →
+      commands → known issues → temporary notes) to maximise LLM prompt cache
+      hits. See `docs/conventions/claude-md-ordering.md`.
 
 ### Project config
 
