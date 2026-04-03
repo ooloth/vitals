@@ -6,6 +6,8 @@
 > This software may change or break without notice. No support or warranty is provided.
 > Use at your own risk.
 
+Agency contains autonomous agent loops that scan projects for problems and then fix them.
+
 ```mermaid
 flowchart LR
     subgraph scan["Scan loop (read-only)"]
@@ -20,8 +22,6 @@ flowchart LR
         F2 -->|approved| F3[open PR]
     end
 ```
-
-Agency contains autonomous agent loops that scan projects for problems and then fix them:
 
 - **Scan runs are read-only**: they query logs, read codebases, or check whatever else you can think
   of to configure — they surface anything worth acting on, and post well-formed GitHub issues
