@@ -1,9 +1,8 @@
 import json
-import subprocess
 import sys
 from pathlib import Path
 
-from loops.common import ROOT, agent, load_project
+from loops.common import ROOT, agent, gh, load_project
 
 BACKPRESSURE_CAP = 10
 
@@ -16,10 +15,7 @@ def project_context(project_id: str) -> str:
 
 
 def open_issue_titles() -> set[str]:
-    result = subprocess.run(
-        ["gh", "issue", "list", "--label", "agent", "--json", "title", "--limit", "100"],
-        capture_output=True, text=True, check=True,
-    )
+    result = gh("issue", "list", "--label", "agent", "--json", "title", "--limit", "100")
     return {i["title"] for i in json.loads(result.stdout)}
 
 
@@ -36,12 +32,7 @@ def post_issues(issues: list[dict], dry_run: bool = False) -> None:
             print(f"  label: {issue.get('label', 'sev:medium')}")
             print(f"  body:\n{issue['body']}\n")
         else:
-            subprocess.run([
-                "gh", "issue", "create",
-                "--title", title,
-                "--body", issue["body"],
-                "--label", issue.get("label", "sev:medium"),
-            ], check=True)
+            gh("issue", "create", "--title", title, "--body", issue["body"], "--label", issue.get("label", "sev:medium"), capture=False)
 
 
 def run_scan(project_id: str, scan_type: str = "logs", max_rounds: int = 5, dry_run: bool = False) -> None:

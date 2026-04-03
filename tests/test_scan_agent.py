@@ -10,6 +10,6 @@ def test_agent_raises_on_nonzero_returncode(tmp_path):
     failed = MagicMock()
     failed.returncode = 1
 
-    with patch("loops.scan.subprocess.run", return_value=failed):
+    with patch("loops.common.subprocess.run", return_value=failed):
         with pytest.raises(RuntimeError, match="claude subprocess exited with return code 1"):
             agent("prompts/scans/codebase.md", "some context")

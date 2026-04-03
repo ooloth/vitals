@@ -7,6 +7,14 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 
 
+def git(*args: str, cwd: Path, capture: bool = True, check: bool = True) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", *args], capture_output=capture, text=True, check=check, cwd=cwd)
+
+
+def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.CompletedProcess:
+    return subprocess.run(["gh", *args], capture_output=capture, text=True, check=check)
+
+
 def _print_event(event: dict) -> None:
     """Print a stream-json event from claude in a readable format.
 

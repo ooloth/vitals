@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from loops.common import ROOT, agent, load_project
+from loops.common import ROOT, agent, gh, git, load_project
 
 IMPLEMENT_TOOLS = ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 REVIEW_TOOLS = ["Read", "Glob", "Grep"]
@@ -18,27 +18,17 @@ def run_command(cmd: str, project_path: Path, label: str) -> None:
 
 
 def next_open_issue() -> int | None:
-    result = subprocess.run(
-        ["gh", "issue", "list", "--label", "agent", "--json", "number", "--limit", "1"],
-        capture_output=True, text=True, check=True,
-    )
+    result = gh("issue", "list", "--label", "agent", "--json", "number", "--limit", "1")
     issues = json.loads(result.stdout)
     return issues[0]["number"] if issues else None
 
 
 def issue_context(issue_number: int) -> str:
-    result = subprocess.run(
-        ["gh", "issue", "view", str(issue_number), "--json", "number,title,body,labels"],
-        capture_output=True, text=True, check=True,
-    )
-    return result.stdout
+    return gh("issue", "view", str(issue_number), "--json", "number,title,body,labels").stdout
 
 
 def default_branch(project_path: Path) -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "--abbrev-ref", "origin/HEAD"],
-        capture_output=True, text=True, cwd=project_path,
-    )
+    result = git("rev-parse", "--abbrev-ref", "origin/HEAD", cwd=project_path, check=False)
     ref = result.stdout.strip()  # e.g. "origin/main" or "origin/trunk"
     if ref and "/" in ref:
         return ref.split("/", 1)[1]
@@ -47,10 +37,7 @@ def default_branch(project_path: Path) -> str:
 
 def get_diff(branch: str, project_path: Path) -> str:
     base = default_branch(project_path)
-    result = subprocess.run(
-        ["git", "diff", f"{base}...{branch}"],
-        capture_output=True, text=True, cwd=project_path,
-    )
+    result = git("diff", f"{base}...{branch}", cwd=project_path)
     return result.stdout.strip() or "(no diff — branch may not exist or no changes were made)"
 
 
@@ -72,65 +59,45 @@ def run_tests(project_path: Path, test_cmd: str | None = None) -> dict:
 
 def prepare_branch(issue_number: int, project_path: Path) -> str:
     """Ensure working tree is clean, pull latest, and create the fix branch."""
-    dirty = subprocess.run(
-        ["git", "status", "--porcelain"],
-        capture_output=True, text=True, check=True, cwd=project_path,
-    )
-    if dirty.stdout.strip():
+    if git("status", "--porcelain", cwd=project_path).stdout.strip():
         raise RuntimeError(
             f"Working tree in {project_path} is dirty — resolve before running fix loop"
         )
 
     branch = f"fix/issue-{issue_number}"
-    existing = subprocess.run(
-        ["git", "branch", "--list", branch],
-        capture_output=True, text=True, check=True, cwd=project_path,
-    )
-    if existing.stdout.strip():
+    if git("branch", "--list", branch, cwd=project_path).stdout.strip():
         raise RuntimeError(
             f"Branch {branch!r} already exists in {project_path} — delete it manually before retrying"
         )
 
     base = default_branch(project_path)
-    subprocess.run(["git", "checkout", base], check=True, capture_output=True, cwd=project_path)
-    subprocess.run(["git", "pull", "--ff-only"], check=True, capture_output=True, cwd=project_path)
-    subprocess.run(["git", "checkout", "-b", branch], check=True, capture_output=True, cwd=project_path)
+    git("checkout", base, cwd=project_path)
+    git("pull", "--ff-only", cwd=project_path)
+    git("checkout", "-b", branch, cwd=project_path)
     print(f"[fix] created branch {branch!r} from {base}", flush=True)
     return branch
 
 
 def commit_if_dirty(message: str, project_path: Path) -> bool:
     """Stage and commit any uncommitted changes. Returns True if a commit was made."""
-    status = subprocess.run(
-        ["git", "status", "--porcelain"],
-        capture_output=True, text=True, check=True, cwd=project_path,
-    )
-    if not status.stdout.strip():
+    if not git("status", "--porcelain", cwd=project_path).stdout.strip():
         return False
-    subprocess.run(["git", "add", "-A"], check=True, capture_output=True, cwd=project_path)
-    subprocess.run(["git", "commit", "-m", message], check=True, capture_output=True, cwd=project_path)
+    git("add", "-A", cwd=project_path)
+    git("commit", "-m", message, cwd=project_path)
     print(f"[fix] committed: {message!r}", flush=True)
     return True
 
 
 def open_pr(branch: str, impl: dict, project_path: Path) -> None:
-    subprocess.run(["git", "push", "-u", "origin", branch], check=True, cwd=project_path)
-    subprocess.run([
-        "gh", "pr", "create",
-        "--title", impl["pr_title"],
-        "--body", impl["pr_body"],
-        "--head", branch,
-    ], check=True, cwd=project_path)
+    git("push", "-u", "origin", branch, cwd=project_path, capture=False)
+    gh("pr", "create", "--title", impl["pr_title"], "--body", impl["pr_body"], "--head", branch, capture=False)
 
 
 def run_fix(issue_number: int | None = None, project_id: str | None = None, max_rounds: int = 10) -> None:
     project = load_project(project_id) if project_id else {}
     project_path = Path(project["path"]) if project else ROOT
 
-    original_branch = subprocess.run(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-        capture_output=True, text=True, check=True, cwd=project_path,
-    ).stdout.strip()
+    original_branch = git("rev-parse", "--abbrev-ref", "HEAD", cwd=project_path).stdout.strip()
 
     if issue_number is None:
         issue_number = next_open_issue()
@@ -195,4 +162,4 @@ def run_fix(issue_number: int | None = None, project_id: str | None = None, max_
         sys.exit(1)
 
     finally:
-        subprocess.run(["git", "checkout", original_branch], cwd=project_path, capture_output=True)
+        git("checkout", original_branch, cwd=project_path)
