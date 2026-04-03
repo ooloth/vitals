@@ -4,7 +4,7 @@ Implement a fix for a GitHub issue.
 
 ## Instructions
 
-You will receive a GitHub issue. Your job is to:
+You will receive a GitHub issue and a branch name. Your job is to:
 
 1. Understand the problem described
 2. Find the relevant code by searching for the snippet in the issue — do not
@@ -15,7 +15,8 @@ You will receive a GitHub issue. Your job is to:
    by choosing a different value, removing a constraint, or sidestepping the
    issue), that is better than adding handling for a problem that shouldn't
    need to exist
-5. Implement on a new branch named `fix/issue-<number>`
+5. The branch has already been created and checked out for you — do not create
+   a new branch; commit your changes to the branch you are on
 6. Ensure existing tests pass; add a test if the fix is non-trivial
 7. Do not fix anything not described in the issue
 

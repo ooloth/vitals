@@ -7,8 +7,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 
+IMPLEMENT_TOOLS = ["Bash(git:*)", "Read", "Write", "Edit", "Glob", "Grep"]
+REVIEW_TOOLS = ["Read", "Glob", "Grep"]
 
-def agent(prompt_file: str, context: str, max_turns: int = 20) -> dict:
+
+def agent(prompt_file: str, context: str, max_turns: int = 20, allowed_tools: list[str] | None = None) -> dict:
     prompt = (ROOT / prompt_file).read_text()
     output_file = Path(tempfile.mktemp(suffix=".json"))
     full_prompt = (
@@ -16,12 +19,14 @@ def agent(prompt_file: str, context: str, max_turns: int = 20) -> dict:
         f"Write your JSON output to this file: {output_file}\n"
         f"Do not include the JSON in your text response."
     )
+    cmd = ["claude", "-p", full_prompt, "--max-turns", str(max_turns)]
+    if allowed_tools:
+        cmd += ["--allowedTools"] + allowed_tools
     print(f"\n{'─' * 60}", flush=True)
-    subprocess.run(
-        ["claude", "-p", full_prompt, "--max-turns", str(max_turns)],
-        cwd=ROOT,
-    )
+    result = subprocess.run(cmd, cwd=ROOT, capture_output=False)
     print(f"{'─' * 60}", flush=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"claude subprocess exited with return code {result.returncode}")
     if not output_file.exists():
         raise RuntimeError(f"Agent did not write output to {output_file}")
     result = json.loads(output_file.read_text())
@@ -91,12 +96,41 @@ def run_tests(project_path: Path) -> dict:
     }
 
 
-def open_pr(impl: dict, project_path: Path) -> None:
+def prepare_branch(issue_number: int, project_path: Path) -> str:
+    """Ensure working tree is clean, pull latest, and create the fix branch."""
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain"],
+        capture_output=True, text=True, check=True, cwd=project_path,
+    )
+    if dirty.stdout.strip():
+        raise RuntimeError(
+            f"Working tree in {project_path} is dirty — resolve before running fix loop"
+        )
+
+    branch = f"fix/issue-{issue_number}"
+    existing = subprocess.run(
+        ["git", "branch", "--list", branch],
+        capture_output=True, text=True, check=True, cwd=project_path,
+    )
+    if existing.stdout.strip():
+        raise RuntimeError(
+            f"Branch {branch!r} already exists in {project_path} — delete it manually before retrying"
+        )
+
+    base = default_branch(project_path)
+    subprocess.run(["git", "checkout", base], check=True, capture_output=True, cwd=project_path)
+    subprocess.run(["git", "pull", "--ff-only"], check=True, capture_output=True, cwd=project_path)
+    subprocess.run(["git", "checkout", "-b", branch], check=True, capture_output=True, cwd=project_path)
+    print(f"[fix] created branch {branch!r} from {base}", flush=True)
+    return branch
+
+
+def open_pr(branch: str, impl: dict, project_path: Path) -> None:
     subprocess.run([
         "gh", "pr", "create",
         "--title", impl["pr_title"],
         "--body", impl["pr_body"],
-        "--head", impl["branch"],
+        "--head", branch,
     ], check=True, cwd=project_path)
 
 
@@ -110,34 +144,47 @@ def run_fix(issue_number: int | None = None, project_id: str | None = None, max_
         return
 
     print(f"[fix] issue #{issue_number} in {project_path}", flush=True)
-    issue = issue_context(issue_number)
+    branch = prepare_branch(issue_number, project_path)
+    issue = json.dumps({
+        "issue": json.loads(issue_context(issue_number)),
+        "branch": branch,
+    })
 
     for round_n in range(max_rounds):
         print(f"[fix] round {round_n + 1}: implementing...", flush=True)
-        impl = agent("prompts/implement.md", issue)
+        impl = agent("prompts/implement.md", issue, allowed_tools=IMPLEMENT_TOOLS)
 
-        branch = impl.get("branch", "")
-        diff = get_diff(branch, project_path) if branch else "(no branch reported)"
+        diff = get_diff(branch, project_path)
+        if not diff or diff.startswith("(no diff"):
+            print(f"[fix] round {round_n + 1}: no diff on {branch!r} — treating as revision needed", flush=True)
+            issue = json.dumps({
+                "issue": json.loads(issue_context(issue_number)),
+                "branch": branch,
+                "feedback": f"Branch {branch!r} has no diff against the base branch. You must commit your changes before reporting back.",
+            })
+            continue
+
         tests = run_tests(project_path)
 
         review_context = json.dumps({
-            "issue": json.loads(issue),
+            "issue": json.loads(issue_context(issue_number)),
             "implementation": impl,
             "diff": diff,
             "tests": tests,
         })
 
         print(f"[fix] round {round_n + 1}: reviewing...", flush=True)
-        reviewed = agent("prompts/review.md", review_context)
+        reviewed = agent("prompts/review.md", review_context, allowed_tools=REVIEW_TOOLS)
 
         if reviewed["approved"]:
-            open_pr(impl, project_path)
+            open_pr(branch, impl, project_path)
             print(f"[fix] issue #{issue_number}: PR opened ({impl['pr_title']})")
             return
 
         print(f"[fix] round {round_n + 1}: revision needed — {reviewed['feedback']}", flush=True)
         issue = json.dumps({
             "issue": json.loads(issue_context(issue_number)),
+            "branch": branch,
             "feedback": reviewed["feedback"],
         })
 

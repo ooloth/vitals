@@ -36,6 +36,9 @@
 - [ ] Validate fix loop end-to-end on issues #1–4 (dogfood)
 - [ ] Harden reviewer: sees actual git diff (not just implementation summary),
       runs existing tests, reports results explicitly
+- [ ] Staleness scan: new scan type that batch reviews open agent-labelled
+      issues against the current codebase, comments and closes stale ones
+      before the fix loop picks them up (`--type staleness`)
 
 ## Phase 2: Schedulable scans
 
