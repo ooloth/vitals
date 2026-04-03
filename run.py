@@ -17,6 +17,7 @@ from loops.scan import run_scan
 
 
 def main() -> None:
+    """Parse CLI arguments and dispatch to the scan or fix loop."""
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
 

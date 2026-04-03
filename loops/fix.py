@@ -1,3 +1,5 @@
+"""Agentic fix loop: pick an open issue, implement a fix, review, and open a PR."""
+
 import json
 import sys
 from pathlib import Path
@@ -10,6 +12,7 @@ from loops.common import (
     git,
     issue_context,
     load_project,
+    log,
     next_open_issue,
     open_pr,
     prepare_branch,
@@ -24,6 +27,7 @@ REVIEW_TOOLS = ["Read", "Glob", "Grep"]
 def run_fix(
     issue_number: int | None = None, project_id: str | None = None, max_rounds: int = 10
 ) -> None:
+    """Pick an open issue, run implement→review rounds until approved, then open a PR."""
     project = load_project(project_id) if project_id else {}
     project_path = Path(project["path"]) if project else ROOT
 
@@ -32,10 +36,10 @@ def run_fix(
     if issue_number is None:
         issue_number = next_open_issue()
     if issue_number is None:
-        print("[fix] no open issues to fix")
+        log.info("[fix] no open issues to fix")
         return
 
-    print(f"[fix] issue #{issue_number} in {project_path}", flush=True)
+    log.info("[fix] issue #%s in %s", issue_number, project_path)
 
     for key, label in [
         ("install", "installing dependencies"),
@@ -55,22 +59,26 @@ def run_fix(
         )
 
         for round_n in range(max_rounds):
-            print(f"[fix] round {round_n + 1}: implementing...", flush=True)
+            log.info("[fix] round %s: implementing...", round_n + 1)
             impl = agent("prompts/fix/implement.md", issue, allowed_tools=IMPLEMENT_TOOLS)
 
             commit_if_dirty(impl.get("pr_title", f"fix: issue #{issue_number}"), project_path)
 
             diff = get_diff(branch, project_path)
             if not diff or diff.startswith("(no diff"):
-                print(
-                    f"[fix] round {round_n + 1}: no diff on {branch!r} — treating as revision needed",
-                    flush=True,
+                log.info(
+                    "[fix] round %s: no diff on %r — treating as revision needed",
+                    round_n + 1,
+                    branch,
                 )
                 issue = json.dumps(
                     {
                         "issue": json.loads(issue_context(issue_number)),
                         "branch": branch,
-                        "feedback": f"Branch {branch!r} has no diff against the base branch. You must make changes and ensure they are committed.",
+                        "feedback": (
+                            f"Branch {branch!r} has no diff against the base branch."
+                            " You must make changes and ensure they are committed."
+                        ),
                     }
                 )
                 continue
@@ -86,17 +94,15 @@ def run_fix(
                 }
             )
 
-            print(f"[fix] round {round_n + 1}: reviewing...", flush=True)
+            log.info("[fix] round %s: reviewing...", round_n + 1)
             reviewed = agent("prompts/fix/review.md", review_context, allowed_tools=REVIEW_TOOLS)
 
             if reviewed["approved"]:
                 open_pr(branch, impl, project_path)
-                print(f"[fix] issue #{issue_number}: PR opened ({impl['pr_title']})")
+                log.info("[fix] issue #%s: PR opened (%s)", issue_number, impl["pr_title"])
                 return
 
-            print(
-                f"[fix] round {round_n + 1}: revision needed — {reviewed['feedback']}", flush=True
-            )
+            log.info("[fix] round %s: revision needed — %s", round_n + 1, reviewed["feedback"])
             issue = json.dumps(
                 {
                     "issue": json.loads(issue_context(issue_number)),
@@ -105,9 +111,8 @@ def run_fix(
                 }
             )
 
-        print(
-            f"[escalate] issue #{issue_number}: did not converge after {max_rounds} rounds",
-            file=sys.stderr,
+        log.error(
+            "[escalate] issue #%s: did not converge after %s rounds", issue_number, max_rounds
         )
         sys.exit(1)
 

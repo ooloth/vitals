@@ -8,6 +8,7 @@ from loops.common.github import (
     open_pr,
     post_issues,
 )
+from loops.common.logging import log
 from loops.common.projects import ROOT, load_project, run_command, run_tests, scan_context
 
 __all__ = [
@@ -20,12 +21,13 @@ __all__ = [
     "git",
     "issue_context",
     "load_project",
+    "log",
     "next_open_issue",
     "open_issue_titles",
     "open_pr",
     "post_issues",
+    "prepare_branch",
     "run_command",
     "run_tests",
     "scan_context",
-    "prepare_branch",
 ]
