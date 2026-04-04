@@ -48,23 +48,14 @@ def post_issues(issues: list[dict], *, dry_run: bool = False) -> None:
         if title in existing:
             log.info("[scan] skipping duplicate: %r", title)
             continue
+        label = issue.get("label", "sev:medium")
         if dry_run:
             log.info("\n[dry-run] would post issue:")
             log.info("  title: %s", title)
-            log.info("  label: %s", issue.get("label", "sev:medium"))
+            log.info("  label: %s", label)
             log.info("  body:\n%s\n", issue["body"])
         else:
-            gh(
-                "issue",
-                "create",
-                "--title",
-                title,
-                "--body",
-                issue["body"],
-                "--label",
-                issue.get("label", "sev:medium"),
-                capture=False,
-            )
+            create_issue(title, issue["body"], [label])
 
 
 def open_reflection_issues() -> list[dict]:
@@ -102,26 +93,39 @@ def ensure_label(name: str, color: str = "0075ca", description: str = "") -> Non
         gh(*args, capture=False)
 
 
+def create_issue(title: str, body: str, labels: list[str]) -> None:
+    """Ensure all labels exist, then create a GitHub issue with them."""
+    for label in labels:
+        ensure_label(label)
+    gh(
+        "issue",
+        "create",
+        "--title",
+        title,
+        "--body",
+        body,
+        "--label",
+        ",".join(labels),
+        capture=False,
+    )
+
+
+def add_label(issue_number: int, label: str) -> None:
+    """Ensure the label exists, then apply it to an existing issue."""
+    ensure_label(label)
+    gh("issue", "edit", str(issue_number), "--add-label", label, capture=False)
+
+
 def post_reflection_findings(findings: list[dict]) -> None:
     """Open new issues or comment on existing ones from retrospective findings."""
     for finding in findings:
         if finding.get("action") == "comment":
             comment_on_issue(finding["issue_number"], finding["body"])
         else:
-            label_list = finding.get("labels", ["agent-reflection"])
-            for label in label_list:
-                ensure_label(label)
-            labels = ",".join(label_list)
-            gh(
-                "issue",
-                "create",
-                "--title",
+            create_issue(
                 finding["title"],
-                "--body",
                 finding["body"],
-                "--label",
-                labels,
-                capture=False,
+                finding.get("labels", ["agent-reflection"]),
             )
 
 

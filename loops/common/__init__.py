@@ -1,7 +1,9 @@
 from loops.common.agent import agent
 from loops.common.git import commit_if_dirty, default_branch, get_diff, git, prepare_branch
 from loops.common.github import (
+    add_label,
     comment_on_issue,
+    create_issue,
     gh,
     issue_context,
     next_open_issue,
@@ -25,9 +27,11 @@ from loops.common.retrospective import run_retrospective
 
 __all__ = [
     "ROOT",
+    "add_label",
     "agent",
     "comment_on_issue",
     "commit_if_dirty",
+    "create_issue",
     "default_branch",
     "get_diff",
     "gh",
