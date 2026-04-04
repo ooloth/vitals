@@ -133,6 +133,6 @@ def run_scan(
             "converged": converged,
             "exit_code": exit_code,
         }
-        run_retrospective(run_dir, ctx.refs, metadata)
+        run_retrospective(run_dir, ctx.refs, metadata, dry_run=dry_run)
         if exit_code != 0:
             sys.exit(exit_code)

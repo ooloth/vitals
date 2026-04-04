@@ -29,9 +29,14 @@ def _fetch_open_issues() -> list[dict]:
     ]
 
 
-def _post_findings(findings: list[dict]) -> None:
+def _post_findings(findings: list[dict], *, dry_run: bool = False) -> None:
     """Open new issues or comment on existing ones from retrospective findings."""
     for finding in findings:
+        if dry_run:
+            log.info(
+                "[dry-run] would post retrospective finding: %s", finding.get("title", "(comment)")
+            )
+            continue
         if finding.get("action") == "comment":
             comment_on_issue(finding["issue_number"], finding["body"])
         else:
@@ -46,6 +51,8 @@ def run_retrospective(
     run_dir: Path,
     reflections: list[dict],
     metadata: dict,
+    *,
+    dry_run: bool = False,
 ) -> None:
     """Run the retrospective agent and post any findings as GitHub issues."""
     context = json.dumps(
@@ -65,7 +72,8 @@ def run_retrospective(
     write_step(run_dir, "retrospective", retro)
     findings = retro.get("findings", [])
     if findings:
-        log.info("[retrospective] posting %s finding(s)...", len(findings))
-        _post_findings(findings)
+        action = "would post" if dry_run else "posting"
+        log.info("[retrospective] %s %s finding(s)...", action, len(findings))
+        _post_findings(findings, dry_run=dry_run)
     else:
         log.info("[retrospective] no findings to post")
