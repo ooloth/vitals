@@ -128,4 +128,4 @@ Or use GitHub Actions or your favourite other scheduler.
 
 ## Inspiration
 
-<!-- TODO: credit workos/case here -->
+- [workos/case](https://github.com/workos/case)
