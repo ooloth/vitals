@@ -21,6 +21,7 @@ from loops.common.projects import (
     run_tests,
     scan_context,
 )
+from loops.common.retrospective import run_retrospective
 
 __all__ = [
     "ROOT",
@@ -45,6 +46,7 @@ __all__ = [
     "project_context",
     "recent_run_dirs",
     "run_command",
+    "run_retrospective",
     "run_tests",
     "scan_context",
     "write_step",

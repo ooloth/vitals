@@ -18,12 +18,10 @@ from loops.common import (
     make_run_dir,
     next_open_issue,
     open_pr,
-    open_reflection_issues,
-    post_reflection_findings,
     prepare_branch,
     project_context,
-    recent_run_dirs,
     run_command,
+    run_retrospective,
     run_tests,
     write_step,
 )
@@ -59,35 +57,6 @@ def _step(
     write_step(ctx.run_dir, name, out)
     ctx.refs.extend({"step": name, "text": r} for r in out.get("reflections", []))
     return out
-
-
-def _run_retrospective(
-    run_dir: Path,
-    reflections: list[dict],
-    metadata: dict,
-) -> None:
-    """Run the retrospective agent and post any findings as GitHub issues."""
-    context = json.dumps(
-        {
-            "run_metadata": metadata,
-            "reflections": reflections,
-            "recent_log_dirs": [str(d) for d in recent_run_dirs(limit=10) if d != run_dir],
-            "open_reflection_issues": open_reflection_issues(),
-        }
-    )
-    log.info("[retrospective] analysing run...")
-    retro = agent("prompts/retrospective.md", context)
-    report = retro.get("run_report", "")
-    sys.stdout.write(f"\n{'═' * 60}\n{report}\n{'═' * 60}\n")
-    sys.stdout.flush()
-    (run_dir / "report.md").write_text(report)
-    write_step(run_dir, "retrospective", retro)
-    findings = retro.get("findings", [])
-    if findings:
-        log.info("[retrospective] posting %s finding(s)...", len(findings))
-        post_reflection_findings(findings)
-    else:
-        log.info("[retrospective] no findings to post")
 
 
 def run_fix(
@@ -214,6 +183,6 @@ def run_fix(
             "converged": converged,
             "exit_code": exit_code,
         }
-        _run_retrospective(run_dir, ctx.refs, metadata)
+        run_retrospective(run_dir, ctx.refs, metadata)
         if exit_code != 0:
             sys.exit(exit_code)
