@@ -12,7 +12,7 @@ from loops.common.github import (
     post_issues,
 )
 from loops.common.logging import log
-from loops.common.logs import make_run_dir, recent_run_dirs, write_step
+from loops.common.logs import make_run_dir, write_step
 from loops.common.projects import (
     ROOT,
     load_project,
@@ -43,7 +43,6 @@ __all__ = [
     "post_issues",
     "prepare_branch",
     "project_context",
-    "recent_run_dirs",
     "run_command",
     "run_tests",
     "scan_context",
