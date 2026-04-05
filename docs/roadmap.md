@@ -130,6 +130,23 @@
       effort without paying for it on the implement step; configurable in
       `projects.json` per project
 
+## Future: Axiom ingestion for run telemetry
+
+Today's run data lives in `.logs/` as local files. The retrospective scan
+reads them with Glob/Read/Grep. This works at current scale but has structural
+limits: no cross-machine visibility, agent context limits when reading many
+files, no correlation with external signals, no retention policy.
+
+The stream-json transcript lines are already structured events — each line is
+valid JSON with a `type` field. This means all run data (metadata, reflections,
+transcripts) can be ingested into Axiom as discrete queryable events, tagged
+with run/step/project metadata. The retrospective scan agent would query Axiom
+APL instead of reading files. `.logs/` becomes an optional local cache.
+
+Tackle when file-based reading becomes a limitation (multi-machine runs, too
+many runs to fit in context, need for cross-signal correlation). See
+`docs/architecture/harness-self-improvement.md` for the full design.
+
 ## Phase 2: Schedulable scans
 
 - [ ] launchd job for nightly scan runs (cadence stays in cron, not in config)

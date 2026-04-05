@@ -160,6 +160,42 @@ Human reviews and merges PR:
 
 ---
 
+## Future: Axiom ingestion for run telemetry
+
+The current design reads `.logs/` with Glob/Read/Grep. This works at current
+scale but has structural limits:
+
+- No cross-machine visibility — each machine has its own `.logs/`
+- Agent context limits — reading many transcript files eats context fast
+- No correlation with external signals (GitHub activity, deploy events)
+- No retention policy — old runs accumulate indefinitely
+
+**Key insight:** The stream-json transcript lines are already structured events.
+Each line is valid JSON with a `type` field and content blocks containing tool
+calls, text, and results. They are not blobs. This means *all* run data
+(metadata, reflections, and transcripts) can be ingested into Axiom as discrete
+queryable events, tagged with run/step/project metadata.
+
+**Proposed architecture:**
+
+- **Terminal display**: unchanged — `_print_event()` parses and shows
+  human-readable output during the run
+- **Axiom ingestion**: each stream-json line is sent to Axiom as a structured
+  event alongside the terminal display (same raw line, extra ingestion call)
+- **Retrospective scan**: queries Axiom APL instead of reading files
+  (e.g. `where type == "assistant" and run.converged == false | summarize count() by step`)
+- **`.logs/`**: becomes an optional local cache, not the source of truth
+
+This approach requires adding an Axiom dataset and ingestion call in `agent()`,
+plus an APL-based find prompt for the retrospective scan type.
+
+**When to tackle:** when file-based reading becomes a limitation — multi-machine
+runs, too many runs to fit in agent context, or need for cross-signal
+correlation. The existing logs/error-spikes scan already shows the APL query
+pattern.
+
+---
+
 ## What makes a good reflection issue
 
 The retrospective scan agent should meet this bar:
