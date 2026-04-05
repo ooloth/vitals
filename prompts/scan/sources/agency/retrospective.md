@@ -11,7 +11,7 @@ A JSON object with the standard scan calibration:
 
 ## Your tools
 
-Use Read, Glob, and Grep to navigate `.logs/` run directories. Each run
+Read, Glob, and Grep. These are the only tools available — do not attempt Bash. Each run
 directory contains:
 
 - `metadata.json` — run type, project, scan type or issue number, step
@@ -25,9 +25,12 @@ directory contains:
 
 ## How to approach this
 
-1. **Enumerate recent runs.** Use Glob to list recent directories under `.logs/`.
-   Read `metadata.json` from each to get an overview (run type, converged?,
-   duration, step count).
+1. **Review the pre-loaded run summaries.** The coordinator has already read
+   `metadata.json` from each recent run directory and included the results as
+   structured JSON in your context (see `## Recent run summaries` above). Use
+   these to get an overview (run type, converged?, duration, step count) without
+   any Glob or Read calls. Each entry includes a `run_dir` path so you can
+   navigate directly to step JSONs and transcripts when you need to go deeper.
 
 2. **Look for patterns across runs** — not one-off anomalies, but the same
    failure mode appearing in multiple runs. Focus on:
