@@ -8,10 +8,10 @@ from pathlib import Path
 
 from loops.common import (
     agent,
+    approved_issue_count,
     load_project,
     log,
     make_run_dir,
-    open_issue_titles,
     post_issues,
     recent_run_summaries,
     scan_context,
@@ -26,6 +26,7 @@ class _RunCtx:
     run_dir: Path
     steps: list[dict]
     refs: list[dict]
+    extra_labels: list[str]
 
 
 @dataclasses.dataclass
@@ -39,6 +40,17 @@ class _StepCfg:
 
 
 _FIND_CFG = _StepCfg(allowed_tools=["Read", "Glob", "Grep"], max_turns=30)
+
+
+def _issue_labels(scan_type: str) -> list[str]:
+    """Return the labels to apply to every issue posted by this scan type."""
+    if scan_type == "agency/retrospective":
+        source = "retrospective"
+    elif scan_type.startswith("logs/"):
+        source = "scan:logs"
+    else:
+        source = "scan:codebase"
+    return ["autonomous", "needs-human-review", source]
 
 
 def _step(
@@ -82,7 +94,7 @@ def _run_review_rounds(
             json.dumps(drafted),
         )
         if reviewed["ready"]:
-            post_issues(reviewed["issues"], dry_run=dry_run)
+            post_issues(reviewed["issues"], extra_labels=ctx.extra_labels, dry_run=dry_run)
             action = "would post" if dry_run else "posted"
             log.info("[scan] %s: %s %s issue(s)", label, action, len(reviewed["issues"]))
             return True
@@ -101,7 +113,7 @@ def run_scan(
 ) -> None:
     """Scan a project for problems and post issues, respecting the backpressure cap."""
     if not dry_run:
-        open_count = len(open_issue_titles())
+        open_count = approved_issue_count()
         if open_count >= BACKPRESSURE_CAP:
             log.info(
                 "[scan] %s open issues pending fix — skipping scan (backpressure cap: %s)",
@@ -121,7 +133,7 @@ def run_scan(
         context = f"{context}\n\n## Recent run summaries\n\n{json.dumps(summaries, indent=2)}"
 
     run_dir = make_run_dir(f"{project_id}-{scan_type.replace('/', '-')}")
-    ctx = _RunCtx(run_dir=run_dir, steps=[], refs=[])
+    ctx = _RunCtx(run_dir=run_dir, steps=[], refs=[], extra_labels=_issue_labels(scan_type))
     started_at = time.monotonic()
     converged = False
     exit_code = 0

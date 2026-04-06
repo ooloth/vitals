@@ -2,12 +2,13 @@ from loops.common.agent import agent
 from loops.common.git import commit_if_dirty, default_branch, get_diff, git, prepare_branch
 from loops.common.github import (
     add_label,
+    approved_issue_count,
     comment_on_issue,
     create_issue,
     gh,
     issue_context,
     next_open_issue,
-    open_issue_titles,
+    open_autonomous_titles,
     open_pr,
     post_issues,
 )
@@ -26,6 +27,7 @@ __all__ = [
     "ROOT",
     "add_label",
     "agent",
+    "approved_issue_count",
     "comment_on_issue",
     "commit_if_dirty",
     "create_issue",
@@ -38,7 +40,7 @@ __all__ = [
     "log",
     "make_run_dir",
     "next_open_issue",
-    "open_issue_titles",
+    "open_autonomous_titles",
     "open_pr",
     "post_issues",
     "prepare_branch",
