@@ -42,8 +42,8 @@ def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.Compl
 
 
 def next_open_issue() -> int | None:
-    """Return the number of the oldest open approved issue, or None."""
-    result = gh("issue", "list", "--label", "approved", "--json", "number", "--limit", "1")
+    """Return the number of the oldest open ready-for-agent issue, or None."""
+    result = gh("issue", "list", "--label", "ready-for-agent", "--json", "number", "--limit", "1")
     issues = json.loads(result.stdout)
     return issues[0]["number"] if issues else None
 
@@ -60,8 +60,8 @@ def open_autonomous_titles() -> set[str]:
 
 
 def approved_issue_count() -> int:
-    """Return the number of open approved issues (for backpressure checks)."""
-    result = gh("issue", "list", "--label", "approved", "--json", "number", "--limit", "100")
+    """Return the number of open ready-for-agent issues (for backpressure checks)."""
+    result = gh("issue", "list", "--label", "ready-for-agent", "--json", "number", "--limit", "100")
     return len(json.loads(result.stdout))
 
 

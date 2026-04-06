@@ -10,6 +10,6 @@ Either side can be replaced without touching the other.
 
 **Labels**: Issues posted by scan carry a `sev:*` severity label, `autonomous`
 and `needs-human-review` (applied to all agent-created issues), and a source
-label (`scan:codebase`, `scan:logs`, or `retrospective`). The fix loop picks
-up issues via `gh issue list --label approved` — the human-applied signal that
+label (`scan:codebase`, `scan:logs`, or `scan:retrospective`). The fix loop picks
+up issues via `gh issue list --label ready-for-agent` — the human-applied signal that
 an issue has been reviewed and is ready to act on.

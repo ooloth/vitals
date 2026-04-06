@@ -89,7 +89,7 @@ uv run --frozen python run.py scan my-project --type codebase/dead-code
 # Fix a specific issue
 uv run --frozen python run.py fix --issue 3 --project my-project
 
-# Fix the next open issue labelled 'approved'
+# Fix the next open issue labelled 'ready-for-agent'
 uv run --frozen python run.py fix
 
 # Run with secrets from 1Password exposed as environment variables

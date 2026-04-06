@@ -27,7 +27,7 @@
 - [x] Add issue deduplication: before posting, check for existing open issues
       with matching title; start with title match, later grow to reading
       descriptions and posting as comment on duplicate
-- [x] Add backpressure check: if open `approved` issues exceed a cap,
+- [x] Add backpressure check: if open `ready-for-agent` issues exceed a cap,
       skip the scan run rather than piling on more issues the fix loop hasn't
       cleared yet (lives inside scan coordinator, scheduled externally via launchd)
 
@@ -46,7 +46,7 @@
       concurrent runs can't collide on the same issue
 - [ ] No-changes diagnostics: when the implement agent produces no diff,
       post its raw first response as a comment on the issue and remove the
-      `approved` label so a human can see why it stalled instead of
+      `ready-for-agent` label so a human can see why it stalled instead of
       silently retrying the round
 - [ ] Review trail as PR comment: after opening the PR, append a collapsible
       summary of every implement/review iteration (iteration count,
@@ -138,7 +138,7 @@ the retrospective to notice them across runs:
 - **Non-convergence escalation** (scan + fix): when `max_rounds` is reached
   without convergence, the coordinator logs `[escalate]` and exits 1. It should
   also act: for the fix loop, post a comment on the issue explaining what
-  happened and remove `approved` so a human sees it; for the scan loop, open
+  happened and remove `ready-for-agent` so a human sees it; for the scan loop, open
   an issue tagged `escalation`. Single-run signal — acting at the
   coordinator level is faster than routing through the retrospective.
 

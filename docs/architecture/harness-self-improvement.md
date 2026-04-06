@@ -120,11 +120,11 @@ three-section format as all scan-generated issues:
 | ------------------- | ------------------------------------------------ |
 | `autonomous`        | All agent-created issues                         |
 | `needs-human-review`| Awaiting human review before any action          |
-| `retrospective`     | Retrospective-generated (harness improvement)    |
+| `scan:retrospective` | Retrospective-generated (harness improvement)   |
 
-Retrospective issues do **not** carry the `approved` label when opened. The
-fix loop will not pick them up until a human reviews the issue and adds
-`approved`.
+Retrospective issues do **not** carry the `ready-for-agent` label when opened.
+The fix loop will not pick them up until a human reviews the issue and adds
+`ready-for-agent`.
 
 ---
 
@@ -144,12 +144,12 @@ Retrospective scan (standard pipeline):
   triage      → clusters findings
   draft       → writes GitHub issue bodies
   review      → quality gate (rejects if issue violates rules)
-  post        → opens issues with autonomous + needs-human-review + retrospective labels
+  post        → opens issues with autonomous + needs-human-review + scan:retrospective labels
 
 Human reviews issue:
   → closes if wrong/irrelevant
   → edits if partly right
-  → adds approved label when satisfied
+  → adds ready-for-agent label when satisfied
 
 Fix loop picks up issue:
   → implements harness change (prompt edit, loop change, etc.)

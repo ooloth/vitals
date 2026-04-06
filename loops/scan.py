@@ -45,7 +45,7 @@ _FIND_CFG = _StepCfg(allowed_tools=["Read", "Glob", "Grep"], max_turns=30)
 def _issue_labels(scan_type: str) -> list[str]:
     """Return the labels to apply to every issue posted by this scan type."""
     if scan_type == "agency/retrospective":
-        source = "retrospective"
+        source = "scan:retrospective"
     elif scan_type.startswith("logs/"):
         source = "scan:logs"
     else:

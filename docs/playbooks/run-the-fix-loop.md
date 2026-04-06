@@ -1,6 +1,6 @@
 # Run the fix loop on an issue
 
-1. Ensure the issue is labelled `approved` in GitHub so the fix loop can find it.
+1. Ensure the issue is labelled `ready-for-agent` in GitHub so the fix loop can find it.
 
 2. Run:
 
@@ -8,7 +8,7 @@
    uv run --frozen python run.py fix --issue <number>
    ```
 
-   Or let it pick the next open `approved` issue:
+   Or let it pick the next open `ready-for-agent` issue:
 
    ```bash
    uv run --frozen python run.py fix

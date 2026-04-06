@@ -35,6 +35,6 @@ more frequent scans; a stable library that changes rarely may need fewer.
 Cadence and fix loop throughput must be matched. A nightly scan that opens 10
 issues will outpace a fix loop that closes 2 per day. The backpressure cap in
 `projects.json` prevents the issue queue from growing unboundedly — when open
-`approved` issues exceed the cap, the scan skips rather than piling on.
+`ready-for-agent` issues exceed the cap, the scan skips rather than piling on.
 
 See also: the backpressure check in the scan coordinator.
