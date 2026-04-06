@@ -116,16 +116,15 @@ three-section format as all scan-generated issues:
 
 **Labels:**
 
-| Label                     | Meaning                             |
-| ------------------------- | ----------------------------------- |
-| `agent-reflection`        | All retrospective-generated issues  |
-| `reflection:scan`         | Scan loop behaviour                 |
-| `reflection:fix`          | Fix loop behaviour                  |
-| `reflection:{project-id}` | Project-specific signal calibration |
+| Label               | Meaning                                          |
+| ------------------- | ------------------------------------------------ |
+| `autonomous`        | All agent-created issues                         |
+| `needs-human-review`| Awaiting human review before any action          |
+| `retrospective`     | Retrospective-generated (harness improvement)    |
 
-Reflection issues do **not** carry the `ready-to-fix` label when opened. The
+Retrospective issues do **not** carry the `approved` label when opened. The
 fix loop will not pick them up until a human reviews the issue and adds
-`ready-to-fix`.
+`approved`.
 
 ---
 
@@ -145,12 +144,12 @@ Retrospective scan (standard pipeline):
   triage      → clusters findings
   draft       → writes GitHub issue bodies
   review      → quality gate (rejects if issue violates rules)
-  post        → opens issues with agent-reflection labels
+  post        → opens issues with autonomous + needs-human-review + retrospective labels
 
 Human reviews issue:
   → closes if wrong/irrelevant
   → edits if partly right
-  → adds ready-to-fix label when satisfied
+  → adds approved label when satisfied
 
 Fix loop picks up issue:
   → implements harness change (prompt edit, loop change, etc.)

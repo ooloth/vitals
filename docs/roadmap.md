@@ -27,7 +27,7 @@
 - [x] Add issue deduplication: before posting, check for existing open issues
       with matching title; start with title match, later grow to reading
       descriptions and posting as comment on duplicate
-- [x] Add backpressure check: if open `agent`-labelled issues exceed a cap,
+- [x] Add backpressure check: if open `approved` issues exceed a cap,
       skip the scan run rather than piling on more issues the fix loop hasn't
       cleared yet (lives inside scan coordinator, scheduled externally via launchd)
 
@@ -41,12 +41,12 @@
       branch on exit, push before PR
 - [x] Per-project install/checks/tests commands; coordinator runs them to
       verify clean state before starting work
-- [ ] Issue locking: claim an issue with an `agent-fix-in-progress` label
+- [ ] Issue locking: claim an issue with a `fix-in-progress` label
       before starting work; release it on exit (including on error) so two
       concurrent runs can't collide on the same issue
 - [ ] No-changes diagnostics: when the implement agent produces no diff,
       post its raw first response as a comment on the issue and remove the
-      `ready-to-fix` label so a human can see why it stalled instead of
+      `approved` label so a human can see why it stalled instead of
       silently retrying the round
 - [ ] Review trail as PR comment: after opening the PR, append a collapsible
       summary of every implement/review iteration (iteration count,
@@ -55,7 +55,7 @@
 - [ ] Use `--force-with-lease` on `git push` instead of plain `-u origin
       branch` so amended branches can be re-pushed safely without
       overwriting unexpected remote state
-- [ ] Staleness scan: new scan type that batch reviews open agent-labelled
+- [ ] Staleness scan: new scan type that batch reviews open `autonomous`
       issues against the current codebase, comments and closes stale ones
       before the fix loop picks them up (`--type staleness`)
 - [ ] Local branch cleanup after PR is merged (roadmap only — manual for now)
@@ -138,8 +138,8 @@ the retrospective to notice them across runs:
 - **Non-convergence escalation** (scan + fix): when `max_rounds` is reached
   without convergence, the coordinator logs `[escalate]` and exits 1. It should
   also act: for the fix loop, post a comment on the issue explaining what
-  happened and remove `ready-to-fix` so a human sees it; for the scan loop, open
-  an issue tagged `agent-escalation`. Single-run signal — acting at the
+  happened and remove `approved` so a human sees it; for the scan loop, open
+  an issue tagged `escalation`. Single-run signal — acting at the
   coordinator level is faster than routing through the retrospective.
 
 - **Scan draft non-progress**: if a redraft is identical to the previous draft,
