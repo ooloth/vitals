@@ -120,7 +120,8 @@ three-section format as all scan-generated issues:
 | ------------------- | ------------------------------------------------ |
 | `autonomous`        | All agent-created issues                         |
 | `needs-human-review`| Awaiting human review before any action          |
-| `scan:retrospective` | Retrospective-generated (harness improvement)   |
+| `scan:retrospective` | Scan-loop retrospective findings               |
+| `fix:retrospective`  | Fix-loop retrospective findings                |
 
 Retrospective issues do **not** carry the `ready-for-agent` label when opened.
 The fix loop will not pick them up until a human reviews the issue and adds

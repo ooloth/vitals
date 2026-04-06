@@ -79,6 +79,20 @@
             "Review rounds consistently rejecting for the same rule violation"
           ],
           "ignore": []
+        },
+        {
+          "type": "agency/fix-retrospective",
+          "normal": [
+            "Occasional first-draft rejection followed by successful redraft is expected",
+            "Single non-convergence on a complex fix run is not a pattern"
+          ],
+          "flag": [
+            "Same failure mode appearing across 3+ fix runs",
+            "Implement agent producing no diff repeatedly",
+            "Review rounds consistently rejecting for the same rule violation",
+            "Reflections mentioning missing context or ambiguous prompts repeatedly"
+          ],
+          "ignore": []
         }
       ]
     }

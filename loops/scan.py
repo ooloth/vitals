@@ -46,6 +46,8 @@ def _issue_labels(scan_type: str) -> list[str]:
     """Return the labels to apply to every issue posted by this scan type."""
     if scan_type == "agency/retrospective":
         source = "scan:retrospective"
+    elif scan_type == "agency/fix-retrospective":
+        source = "fix:retrospective"
     elif scan_type.startswith("logs/"):
         source = "scan:logs"
     else:
@@ -128,7 +130,7 @@ def run_scan(
         msg = f"Project '{project_id}' has no '{scan_type}' scan configured"
         raise ValueError(msg)
     context = scan_context(project, scan)
-    if scan_type == "agency/retrospective":
+    if scan_type in ("agency/retrospective", "agency/fix-retrospective"):
         summaries = recent_run_summaries()
         context = f"{context}\n\n## Recent run summaries\n\n{json.dumps(summaries, indent=2)}"
 

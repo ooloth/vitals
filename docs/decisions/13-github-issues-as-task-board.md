@@ -24,7 +24,8 @@ command.
 | `needs-human-review` | scan loop  | Awaiting human review before any action        |
 | `scan:codebase`    | scan loop    | Output of a codebase scan                      |
 | `scan:logs`        | scan loop    | Output of a logs scan                          |
-| `scan:retrospective` | scan loop  | Output of a retrospective scan                 |
+| `scan:retrospective` | scan loop  | Output of a scan-loop retrospective            |
+| `fix:retrospective`  | scan loop  | Output of a fix-loop retrospective             |
 | `sev:*`            | scan loop    | Severity (critical / high / medium / low)      |
 | `ready-for-agent`  | human        | Reviewed and ready for the fix loop            |
 | `fix-in-progress`  | fix loop     | Claimed by a running fix loop instance         |
