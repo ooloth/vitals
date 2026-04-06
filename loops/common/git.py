@@ -1,25 +1,33 @@
-"""Git subprocess wrapper using shlex-quoted env vars to avoid untrusted input."""
+"""Git subprocess wrapper."""
 
-import os
-import shlex
+import functools
+import shutil
 import subprocess
 from pathlib import Path
 
 from loops.common.logging import log
 
 
+@functools.cache
+def _git_path() -> str:
+    """Return the absolute path to the git CLI, raising if not installed."""
+    path = shutil.which("git")
+    if not path:
+        msg = "git CLI not found in PATH"
+        raise RuntimeError(msg)
+    return path
+
+
 def git(
     *args: str, cwd: Path, capture: bool = True, check: bool = True
 ) -> subprocess.CompletedProcess:
     """Run a git command with the given arguments."""
-    env = {**os.environ, "_GIT_ARGS": shlex.join(args)}
-    return subprocess.run(
-        ["/bin/sh", "-c", "eval git $_GIT_ARGS"],
+    return subprocess.run(  # noqa: S603
+        [_git_path(), *args],
         capture_output=capture,
         text=True,
         check=check,
         cwd=cwd,
-        env=env,
     )
 
 
