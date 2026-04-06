@@ -34,7 +34,7 @@ markdown).
 
 Stay grounded in real mismatches. Do not flag:
 - Deliberate future-work sections clearly labelled as such (e.g. a "Phase 2"
-  or "Planned" subsection in a roadmap)
+  or "Planned" subsection in an architecture doc)
 - Minor wording imprecision that does not mislead a reader
 - Design-intent sections in architecture docs that are consistent with the
   codebase direction even if not yet fully implemented
@@ -55,8 +55,8 @@ nothing to add.
 {
   "findings": [
     {
-      "file": "docs/roadmap.md",
-      "section": "Harness self-improvement",
+      "file": "docs/architecture/harness-self-improvement.md",
+      "section": "Components",
       "description": "one sentence: what is stale and why it matters",
       "severity": "high | medium | low",
       "sample": "the stale sentence or paragraph verbatim"

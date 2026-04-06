@@ -8,7 +8,6 @@
 | `CLAUDE.md`          | In-session context for Claude Code: commands and reference table                 |
 | `docs/philosophy.md` | Design principles and reasoning behind key choices                               |
 | `docs/rules.md`      | Invariants the codebase must uphold                                              |
-| `docs/roadmap.md`    | Planned and completed work — always a mix; future items are intentional          |
 | `docs/architecture/` | How specific subsystems work; may describe design intent ahead of implementation |
 | `docs/conventions/`  | Code and doc style rules                                                         |
 | `docs/decisions/`    | ADR-style records of why key choices were made                                   |

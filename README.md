@@ -121,7 +121,6 @@ Or use GitHub Actions or your favourite other scheduler.
 | Scan cadence and entropy management             | [docs/architecture/scan-cadence.md](docs/architecture/scan-cadence.md)                         |
 | Harness self-improvement                        | [docs/architecture/harness-self-improvement.md](docs/architecture/harness-self-improvement.md) |
 | Conventions                                     | [docs/conventions/](docs/conventions/)                                                         |
-| Roadmap                                         | [docs/roadmap.md](docs/roadmap.md)                                                             |
 
 ---
 

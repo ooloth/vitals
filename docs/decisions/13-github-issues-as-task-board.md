@@ -5,11 +5,11 @@ findings, retrospective improvements, manually planned enhancements, and
 speculative ideas alike. Labels distinguish type and readiness. The fix loop
 reads only `ready-for-agent` issues; all other labels are invisible to agents.
 
-**Why**: The alternative — tracking planned work in `docs/roadmap.md` and
-scan output in GitHub issues — created two parallel lists with no clear rule
-about which work belonged where. Items drifted into both, neither stayed
-current, and planning sessions required reconciling two sources. A single
-tracker with label-based filtering is more maintainable and queryable.
+**Why**: The alternative — tracking planned work in a `docs/roadmap.md`
+file and scan output in GitHub issues — created two parallel lists with no
+clear rule about which work belonged where. Items drifted into both, neither
+stayed current, and planning sessions required reconciling two sources. A
+single tracker with label-based filtering is more maintainable and queryable.
 
 GitHub issues also compose well with the rest of the system: the scan loop
 posts to them, the fix loop reads from them, the retrospective scan posts to
@@ -41,10 +41,9 @@ purely for human organisation — agents ignore them. The scan loop queries
 The backpressure cap counts `--label ready-for-agent` issues — the depth of the
 fix loop queue — not all autonomous issues.
 
-**Role of `docs/roadmap.md`:**
-
-The roadmap is retained as a planning narrative — phases, sequencing, and
-design reasoning for ideas not yet ready to be issues. It is not a task
-list. When an item has a clear enough scope to become an issue, it becomes
-one and is removed from the roadmap. The two should never overlap: an item
-tracked in both places guarantees one goes stale.
+**`docs/roadmap.md` is deleted.** All work — speculative ideas, planned
+enhancements, and scan findings — lives in GitHub issues. The `idea` label
+covers speculative items with no definition of done yet; `enhancement`
+covers planned improvements. Architecture docs (`docs/architecture/`,
+`docs/decisions/`) are the right home for design reasoning that doesn't fit
+an issue.

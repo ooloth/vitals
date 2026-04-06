@@ -26,7 +26,6 @@ op run --env-file=secrets.env -- uv run --frozen python run.py scan <project-id>
 | Philosophy and goals                            | [docs/philosophy.md](docs/philosophy.md)                                                       |
 | Invariants to uphold                            | [docs/rules.md](docs/rules.md)                                                                 |
 | Design decisions                                | [docs/decisions/](docs/decisions/)                                                             |
-| Roadmap                                         | [docs/roadmap.md](docs/roadmap.md)                                                             |
 | Auth strategies by provider                     | [docs/architecture/auth.md](docs/architecture/auth.md)                                         |
 | Scan cadence and entropy management             | [docs/architecture/scan-cadence.md](docs/architecture/scan-cadence.md)                         |
 | Harness self-improvement                        | [docs/architecture/harness-self-improvement.md](docs/architecture/harness-self-improvement.md) |
