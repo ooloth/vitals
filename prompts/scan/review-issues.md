@@ -2,7 +2,7 @@
 
 Review drafted GitHub issues before posting.
 
-## The three rules
+## The four rules
 
 **Rule 1 — Problem section includes a greppable snippet.**
 Reject any issue that names a file path or line number as the primary way to
@@ -19,6 +19,12 @@ cannot be verified without reading the source, rewrite it.
 Reject titles that prescribe an implementation (e.g. "Add check=True to
 subprocess calls"). The title should make the problem legible to someone who
 hasn't read the body.
+
+**Rule 4 — One root cause per issue.**
+Reject any issue that bundles two or more distinct root causes, or whose
+definition of done would require changes in unrelated parts of the codebase.
+Ask the drafter to split it — the drafter may return multiple issues from
+what was one cluster. Each resulting issue must still pass all other rules.
 
 ## Additional checks
 
