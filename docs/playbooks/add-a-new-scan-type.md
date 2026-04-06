@@ -1,6 +1,6 @@
 # Add a new scan type
 
-1. Create `prompts/scans/<type>.md`. Follow the contract:
+1. Create `prompts/scan/sources/<type>.md`. Follow the contract:
    - Instructions for what to look for and how to query the data source
    - Output format: JSON written to the file path provided by the coordinator
    - Schema: `{ "findings": [ { "pattern", "description", "severity", "sample" } ] }`

@@ -2,7 +2,7 @@
 
 > **Superseded by [10-structured-scan-config-in-json.md](10-structured-scan-config-in-json.md)**
 
-**Decision**: `projects/projects.toml` is the single source of truth for
+**Decision**: `projects/projects.json` is the single source of truth for
 monitored projects and where their data lives.
 
 **Why**: TOML is readable for hand-authoring, handles nested arrays of objects

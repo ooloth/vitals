@@ -5,7 +5,7 @@ Agency runs locally as a CLI tool. Auth is handled at the process level via
 as env vars before the process starts. No secrets are stored on disk or in code.
 
 Non-secret params (project IDs, base URLs, datasource UIDs, log selectors) are stored
-plainly in `projects/projects.toml`. Only tokens and keys go in `secrets.env`.
+plainly in `projects/projects.json`. Only tokens and keys go in `secrets.env`.
 
 ---
 
@@ -30,14 +30,15 @@ transparently. No token in config, no env var needed.
 
 **Config**: only non-secret params required.
 
-```toml
-[[projects.logs]]
-source = "google_cloud_logging"
-project_id = "my-gcp-project-123"   # not a secret
-# log_name = "projects/my-project/logs/app"  # optional filter
+```json
+{
+  "type": "logs/error-spikes",
+  "source": "google_cloud_logging",
+  "project_id": "my-gcp-project-123"
+}
 ```
 
-**Multiple GCP projects**: each has its own `project_id` in config. ADC credentials
+**Multiple GCP projects**: each has its own `project_id` in its scan entry. ADC credentials
 cover all projects your account has access to — no per-project auth needed.
 
 ---
@@ -65,25 +66,29 @@ GRAFANA_TOKEN=op://Work/Grafana/token
 
 Config references the env var for the token, stores everything else plainly:
 
-```toml
-[[projects.logs]]
-source = "grafana_loki"
-base_url = "https://grafana.yourcompany.com"
-datasource_uid = "abc123"
-selector = '{app="my-api", env="prod"}'
-token = "${GRAFANA_TOKEN}"
+```json
+{
+  "type": "logs/error-spikes",
+  "source": "grafana_loki",
+  "base_url": "https://grafana.yourcompany.com",
+  "datasource_uid": "abc123",
+  "selector": "{app=\"my-api\", env=\"prod\"}",
+  "token": "${GRAFANA_TOKEN}"
+}
 ```
 
 ### Case B: Anonymous / network-trusted access
 
 No token needed. Just the base URL and datasource details in config.
 
-```toml
-[[projects.logs]]
-source = "grafana_loki"
-base_url = "https://grafana.yourcompany.com"
-datasource_uid = "abc123"
-selector = '{app="my-api", env="prod"}'
+```json
+{
+  "type": "logs/error-spikes",
+  "source": "grafana_loki",
+  "base_url": "https://grafana.yourcompany.com",
+  "datasource_uid": "abc123",
+  "selector": "{app=\"my-api\", env=\"prod\"}"
+}
 ```
 
 ### How to determine which case applies
