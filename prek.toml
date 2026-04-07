@@ -19,5 +19,5 @@ hooks = [
   # ty is a whole-program checker — a change in src/ can cause a type error in tests/ etc
   # It must always run against the full codebase, not just the staged files. See https://github.com/astral-sh/ty/issues/269#issuecomment-3669333114
   { id = "ty-check", name = "ty check", entry = "uv run --frozen ty check", language = "system", types=["python"], pass_filenames = false, always_run = true },
-  { id = "no-noqa", name = "no unauthorized noqa comments", entry = "bash -c 'grep -rn \"noqa\" --include=\"*.py\" --exclude-dir=.venv | grep -v \"noqa: S603\" && echo \"ERROR: noqa suppression comment detected for an error that is not S603; fix root cause properly without noqa or changing ruff.toml\" && exit 1 || exit 0' --", language = "system", types = ["python"], pass_filenames = false },
+  { id = "no-noqa", name = "restricted noqa comments", entry = "bash -c 'grep -rn \"noqa\" --include=\"*.py\" --exclude-dir=.venv | grep -v \"noqa: S603\" && echo \"ERROR: noqa suppression comment detected for an error other than S603; fix the root issue in a way that improves code quality instead of suppressing it\" && exit 1 || exit 0' --", language = "system", types = ["python"], pass_filenames = false },
 ]
