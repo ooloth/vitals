@@ -28,9 +28,9 @@ step's JSON output as context to the next step. Steps are not coupled to each
 other — only to the JSON contract.
 
 **Loops escalate, not fail silently.**
-When a loop does not converge within `max_rounds`, it prints to stderr and
-exits with a non-zero status. Silent completion of a broken loop is worse
-than a loud failure.
+When a loop does not converge within `max_rounds`, it posts a failure comment
+on the issue, labels it `agent-fix-stalled`, and exits with a non-zero status.
+Silent completion of a broken loop is worse than a loud failure.
 
 ---
 
