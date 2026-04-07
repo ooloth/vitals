@@ -51,6 +51,7 @@ class _RunCtx:
     rounds_completed: int = 0
     last_rejection: str = ""
     converged: bool = False
+    escalated: bool = False
     exit_code: int = 0
 
     def write_metadata(self) -> None:
@@ -122,6 +123,29 @@ def _build_failure_comment(ctx: _RunCtx, max_rounds: int) -> str:
     return "\n".join(lines)
 
 
+def _build_no_diff_comment(impl: dict) -> str:
+    """Build a markdown comment for when the implement agent produced no changes."""
+    raw = json.dumps(impl, indent=2)
+    return (
+        "## 🔍 Agent produced no code changes\n"
+        "\n"
+        "The implement agent ran but did not produce any file changes.\n"
+        "Its output is included below for diagnosis.\n"
+        "\n"
+        "<details>\n"
+        "<summary>Agent output</summary>\n"
+        "\n"
+        "```json\n"
+        f"{raw}\n"
+        "```\n"
+        "\n"
+        "</details>\n"
+        "\n"
+        "The `ready-for-agent` label has been removed.\n"
+        "Review the agent's reasoning, then revise this issue or close it."
+    )
+
+
 def _run_rounds(
     ctx: _RunCtx,
     project: dict,
@@ -152,24 +176,12 @@ def _run_rounds(
 
         diff = get_diff(branch, project_path)
         if not diff or diff.startswith("(no diff"):
-            ctx.last_rejection = f"Round {round_n + 1} produced no diff against the base branch."
-            log.info(
-                "[fix] round %s: no diff on %r — treating as revision needed",
-                round_n + 1,
-                branch,
-            )
-            issue = _with_project_ctx(
-                {
-                    "issue": json.loads(issue_context(ctx.issue_number)),
-                    "branch": branch,
-                    "feedback": (
-                        f"Branch {branch!r} has no diff against the base branch."
-                        " You must make changes and ensure they are committed."
-                    ),
-                },
-                proj_ctx,
-            )
-            continue
+            log.info("[fix] round %s: no diff — escalating", round_n + 1)
+            comment_on_issue(ctx.issue_number, _build_no_diff_comment(impl))
+            remove_label(ctx.issue_number, "ready-for-agent")
+            ctx.escalated = True
+            ctx.exit_code = 1
+            return
 
         tests = run_tests(project_path, project.get("test"))
 
@@ -251,7 +263,8 @@ def run_fix(
             ctx.exit_code = max(ctx.exit_code, 1)
             remove_label(issue_number, "agent-fix-in-progress")
             if ctx.rounds_completed > 0:
-                comment_on_issue(issue_number, _build_failure_comment(ctx, max_rounds))
+                if not ctx.escalated:
+                    comment_on_issue(issue_number, _build_failure_comment(ctx, max_rounds))
                 add_label(issue_number, "agent-fix-stalled")
         git("checkout", original_branch, cwd=project_path)
         ctx.write_metadata()

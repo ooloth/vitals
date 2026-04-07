@@ -120,20 +120,29 @@ def test_non_convergence_posts_comment_and_stalls() -> None:
     assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
 
 
-def test_no_diff_posts_comment_and_stalls() -> None:
-    """When every round produces no diff, a failure comment is posted and the issue is stalled."""
+def test_no_diff_escalates_immediately() -> None:
+    """When implement produces no diff, the agent's output is posted and the issue is stalled."""
     setup = _make_fix_mocks(converge=False, no_diff=True)
 
     with patch.multiple("loops.fix", **setup["patches"]), contextlib.suppress(SystemExit):
         run_fix(issue_number=7, max_rounds=2)
 
-    setup["mocks"]["remove_label"].assert_called_once_with(7, "agent-fix-in-progress")
+    # Only one implement call — no retry, no review
+    assert setup["mocks"]["agent"].call_count == 1
+
     setup["mocks"]["open_pr"].assert_not_called()
 
+    # Posts a comment containing the agent's output, not the generic failure message
     comment_call = setup["mocks"]["comment_on_issue"].call_args
     comment_body = comment_call[0][1]
-    assert "2/2" in comment_body
-    assert "no diff" in comment_body
+    assert "no code changes" in comment_body
+    assert "pr_title" in comment_body  # agent output is included
 
+    # ready-for-agent removed (escalation) + agent-fix-in-progress removed (finally)
+    remove_calls = setup["mocks"]["remove_label"].call_args_list
+    assert (7, "ready-for-agent") in [c.args for c in remove_calls]
+    assert (7, "agent-fix-in-progress") in [c.args for c in remove_calls]
+
+    # agent-fix-stalled added to signal the attempt
     add_calls = setup["mocks"]["add_label"].call_args_list
     assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
