@@ -1,14 +1,28 @@
 """Claude CLI subprocess wrapper with streaming output."""
 
 import contextlib
+import dataclasses
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 from pathlib import Path
 
 from loops.common.projects import ROOT
+
+
+@dataclasses.dataclass
+class AgentConfig:
+    """Optional configuration for an agent() call."""
+
+    max_turns: int = 20
+    allowed_tools: list[str] | None = None
+    transcript_path: Path | None = None
+    step_name: str = ""
+    timeout_minutes: float = 30
 
 
 def _print_event(event: dict) -> None:
@@ -48,14 +62,54 @@ def _print_event(event: dict) -> None:
         sys.stdout.flush()
 
 
-def agent(
-    prompt_file: str,
-    context: str,
-    max_turns: int = 20,
-    allowed_tools: list[str] | None = None,
-    transcript_path: Path | None = None,
-) -> dict:
+def _stream_with_timeout(
+    proc: subprocess.Popen[str],
+    *,
+    timeout_minutes: float,
+    transcript_path: Path | None,
+    label: str,
+) -> None:
+    """Stream subprocess stdout, killing it if *timeout_minutes* is exceeded.
+
+    Raises TimeoutError (with *label* in the message) when the watchdog fires.
+    """
+    if proc.stdout is None:
+        msg = "Subprocess stdout is None"
+        raise RuntimeError(msg)
+    timed_out = threading.Event()
+    start = time.monotonic()
+
+    def _kill_on_timeout() -> None:
+        timed_out.set()
+        proc.kill()
+
+    watchdog = threading.Timer(timeout_minutes * 60, _kill_on_timeout)
+    watchdog.daemon = True
+    watchdog.start()
+    fh = transcript_path.open("a") if transcript_path is not None else None
+    try:
+        for raw_line in proc.stdout:
+            stripped = raw_line.strip()
+            if not stripped:
+                continue
+            if fh is not None:
+                fh.write(raw_line)
+            with contextlib.suppress(json.JSONDecodeError):
+                _print_event(json.loads(stripped))
+    finally:
+        watchdog.cancel()
+        if fh is not None:
+            fh.close()
+    proc.wait()
+    if timed_out.is_set():
+        elapsed = time.monotonic() - start
+        msg = f"Agent step '{label}' timed out after {elapsed:.0f}s (limit: {timeout_minutes:.0f}m)"
+        raise TimeoutError(msg)
+
+
+def agent(prompt_file: str, context: str, cfg: AgentConfig | None = None) -> dict:
     """Run a claude agent with the given prompt and context, returning its JSON output."""
+    cfg = cfg or AgentConfig()
     prompt = (ROOT / prompt_file).read_text()
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
         output_file = Path(tmp.name)
@@ -66,8 +120,13 @@ def agent(
         f"Write your JSON output to this file: {output_file}\n"
         f"Do not include the JSON in your text response."
     )
-    allowed_str = " ".join(allowed_tools) if allowed_tools else ""
-    env = {**os.environ, "_PROMPT": full_prompt, "_TURNS": str(max_turns), "_ALLOWED": allowed_str}
+    allowed_str = " ".join(cfg.allowed_tools) if cfg.allowed_tools else ""
+    env = {
+        **os.environ,
+        "_PROMPT": full_prompt,
+        "_TURNS": str(cfg.max_turns),
+        "_ALLOWED": allowed_str,
+    }
     sys.stdout.write(f"\n{'─' * 60}\n")
     sys.stdout.flush()
     proc = subprocess.Popen(
@@ -82,23 +141,12 @@ def agent(
         cwd=ROOT,
         env=env,
     )
-    if proc.stdout is None:
-        msg = "Subprocess stdout is None"
-        raise RuntimeError(msg)
-    fh = transcript_path.open("a") if transcript_path is not None else None
-    try:
-        for raw_line in proc.stdout:
-            stripped = raw_line.strip()
-            if not stripped:
-                continue
-            if fh is not None:
-                fh.write(raw_line)
-            with contextlib.suppress(json.JSONDecodeError):
-                _print_event(json.loads(stripped))
-    finally:
-        if fh is not None:
-            fh.close()
-    proc.wait()
+    _stream_with_timeout(
+        proc,
+        timeout_minutes=cfg.timeout_minutes,
+        transcript_path=cfg.transcript_path,
+        label=cfg.step_name or prompt_file,
+    )
     sys.stdout.write(f"\n{'─' * 60}\n")
     sys.stdout.flush()
     if proc.returncode != 0:

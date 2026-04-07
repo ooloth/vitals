@@ -1,9 +1,11 @@
+import threading
+from collections.abc import Iterator
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from loops.common.agent import agent
+from loops.common.agent import AgentConfig, agent
 
 
 def test_agent_raises_on_nonzero_returncode(tmp_path: Path) -> None:
@@ -65,11 +67,47 @@ def test_agent_writes_transcript_when_path_provided(tmp_path: Path) -> None:
         agent(
             "prompts/scan/sources/codebase/dead-code.md",
             "some context",
-            transcript_path=transcript_file,
+            AgentConfig(transcript_path=transcript_file),
         )
 
     assert transcript_file.exists()
     assert transcript_file.read_text() == "".join(lines)
+
+
+def test_agent_raises_timeout_error_when_subprocess_exceeds_limit(tmp_path: Path) -> None:
+    """Agent kills the subprocess and raises TimeoutError when the timeout fires."""
+    output_file = tmp_path / "agent_output.json"
+    output_file.touch()
+
+    # Simulate a hanging subprocess: stdout blocks until the process is killed
+    hang_event = threading.Event()
+
+    def blocking_stdout() -> Iterator[str]:
+        hang_event.wait()
+        return
+        yield  # makes this a generator
+
+    proc_mock = MagicMock()
+    proc_mock.stdout = blocking_stdout()
+    proc_mock.returncode = -9  # killed
+    proc_mock.kill.side_effect = hang_event.set
+
+    tmp_file_mock = MagicMock()
+    tmp_file_mock.name = str(output_file)
+    ntf_ctx = MagicMock()
+    ntf_ctx.__enter__ = MagicMock(return_value=tmp_file_mock)
+    ntf_ctx.__exit__ = MagicMock(return_value=False)
+
+    with (
+        patch("loops.common.agent.subprocess.Popen", return_value=proc_mock),
+        patch("loops.common.agent.tempfile.NamedTemporaryFile", return_value=ntf_ctx),
+        pytest.raises(TimeoutError, match=r"'find'.*timed out"),
+    ):
+        agent(
+            "prompts/scan/sources/codebase/dead-code.md",
+            "some context",
+            AgentConfig(step_name="find", timeout_minutes=0.001),
+        )
 
 
 def test_agent_skips_transcript_when_path_not_provided(tmp_path: Path) -> None:

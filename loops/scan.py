@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from loops.common import (
+    AgentConfig,
     agent,
     approved_issue_count,
     load_project,
@@ -60,18 +61,18 @@ def _step(
     name: str,
     prompt: str,
     content: str,
-    cfg: _StepCfg | None = None,
+    step_cfg: _StepCfg | None = None,
 ) -> dict:
     """Run one agent step: time it, persist output, collect reflections."""
-    cfg = cfg or _StepCfg()
+    step_cfg = step_cfg or _StepCfg()
     t0 = time.monotonic()
-    out = agent(
-        prompt,
-        content,
-        max_turns=cfg.max_turns,
-        allowed_tools=cfg.allowed_tools,
+    agent_cfg = AgentConfig(
+        max_turns=step_cfg.max_turns,
+        allowed_tools=step_cfg.allowed_tools,
         transcript_path=ctx.run_dir / f"{name}-transcript.jsonl",
+        step_name=name,
     )
+    out = agent(prompt, content, agent_cfg)
     ctx.steps.append({"name": name, "duration_seconds": round(time.monotonic() - t0, 1)})
     write_step(ctx.run_dir, name, out)
     ctx.refs.extend({"step": name, "text": r} for r in out.get("reflections", []))

@@ -1,4 +1,4 @@
-from loops.common.agent import agent
+from loops.common.agent import AgentConfig, agent
 from loops.common.git import commit_if_dirty, default_branch, get_diff, git, prepare_branch
 from loops.common.github import (
     add_label,
@@ -26,6 +26,7 @@ from loops.common.projects import (
 
 __all__ = [
     "ROOT",
+    "AgentConfig",
     "add_label",
     "agent",
     "approved_issue_count",
