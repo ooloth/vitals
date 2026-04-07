@@ -8,6 +8,7 @@ from pathlib import Path
 
 from loops.common import (
     ROOT,
+    add_label,
     agent,
     commit_if_dirty,
     get_diff,
@@ -20,6 +21,7 @@ from loops.common import (
     open_pr,
     prepare_branch,
     project_context,
+    remove_label,
     run_command,
     run_tests,
     write_step,
@@ -38,8 +40,27 @@ def _with_project_ctx(data: dict, ctx: str) -> str:
 @dataclasses.dataclass
 class _RunCtx:
     run_dir: Path
-    steps: list[dict]
-    refs: list[dict]
+    project_id: str | None
+    issue_number: int
+    started_at: float
+    steps: list[dict] = dataclasses.field(default_factory=list)
+    refs: list[dict] = dataclasses.field(default_factory=list)
+    converged: bool = False
+    exit_code: int = 0
+
+    def write_metadata(self) -> None:
+        """Persist run metadata and collected reflections."""
+        metadata = {
+            "run_type": "fix",
+            "project_id": self.project_id,
+            "issue_number": self.issue_number,
+            "duration_seconds": round(time.monotonic() - self.started_at, 1),
+            "steps": self.steps,
+            "converged": self.converged,
+            "exit_code": self.exit_code,
+        }
+        write_step(self.run_dir, "metadata", metadata)
+        write_step(self.run_dir, "reflections", self.refs)
 
 
 def _step(
@@ -63,6 +84,17 @@ def _step(
     return out
 
 
+def _run_setup_commands(project: dict, project_path: Path) -> None:
+    """Run install / check / test commands configured for the project."""
+    for key, label in [
+        ("install", "installing dependencies"),
+        ("check", "running checks"),
+        ("test", "running tests"),
+    ]:
+        if cmd := project.get(key):
+            run_command(cmd, project_path, label)
+
+
 def run_fix(
     issue_number: int | None = None, project_id: str | None = None, max_rounds: int = 10
 ) -> None:
@@ -79,20 +111,17 @@ def run_fix(
         return
 
     log.info("[fix] issue #%s in %s", issue_number, project_path)
+    add_label(issue_number, "agent-fix-in-progress")
 
     run_dir = make_run_dir(f"fix-{issue_number}")
-    ctx = _RunCtx(run_dir=run_dir, steps=[], refs=[])
-    started_at = time.monotonic()
-    converged = False
-    exit_code = 0
+    ctx = _RunCtx(
+        run_dir=run_dir,
+        project_id=project_id,
+        issue_number=issue_number,
+        started_at=time.monotonic(),
+    )
 
-    for key, label in [
-        ("install", "installing dependencies"),
-        ("check", "running checks"),
-        ("test", "running tests"),
-    ]:
-        if cmd := project.get(key):
-            run_command(cmd, project_path, label)
+    _run_setup_commands(project, project_path)
 
     try:
         branch = prepare_branch(issue_number, project_path)
@@ -158,7 +187,7 @@ def run_fix(
             if reviewed["approved"]:
                 open_pr(branch, impl, project_path)
                 log.info("[fix] issue #%s: PR opened (%s)", issue_number, impl["pr_title"])
-                converged = True
+                ctx.converged = True
                 return
 
             log.info("[fix] round %s: revision needed — %s", round_n + 1, reviewed["feedback"])
@@ -174,22 +203,13 @@ def run_fix(
         log.error(
             "[escalate] issue #%s: did not converge after %s rounds", issue_number, max_rounds
         )
-        exit_code = 1
+        ctx.exit_code = 1
 
     finally:
-        if not converged:
-            exit_code = max(exit_code, 1)
+        if not ctx.converged:
+            ctx.exit_code = max(ctx.exit_code, 1)
+            remove_label(issue_number, "agent-fix-in-progress")
         git("checkout", original_branch, cwd=project_path)
-        metadata = {
-            "run_type": "fix",
-            "project_id": project_id,
-            "issue_number": issue_number,
-            "duration_seconds": round(time.monotonic() - started_at, 1),
-            "steps": ctx.steps,
-            "converged": converged,
-            "exit_code": exit_code,
-        }
-        write_step(run_dir, "metadata", metadata)
-        write_step(run_dir, "reflections", ctx.refs)
-        if exit_code != 0 and sys.exc_info()[0] is None:
-            sys.exit(exit_code)
+        ctx.write_metadata()
+        if ctx.exit_code != 0 and sys.exc_info()[0] is None:
+            sys.exit(ctx.exit_code)
