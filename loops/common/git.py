@@ -22,6 +22,8 @@ def git(
     *args: str, cwd: Path, capture: bool = True, check: bool = True
 ) -> subprocess.CompletedProcess:
     """Run a git command with the given arguments."""
+    # S603: sole allowed suppression. The rule fires on all subprocess.run
+    # calls and cannot be satisfied while using subprocess.
     return subprocess.run(  # noqa: S603
         [_git_path(), *args],
         capture_output=capture,

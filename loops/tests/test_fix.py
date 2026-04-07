@@ -57,7 +57,7 @@ def _make_fix_mocks(*, converge: bool) -> dict:
     # agent needs to return impl on first call, review on second
     call_count = {"n": 0}
 
-    def agent_side_effect(*_args, **_kwargs) -> dict:  # noqa: ANN002, ANN003
+    def agent_side_effect(*_args: object, **_kwargs: object) -> dict:
         call_count["n"] += 1
         return impl if call_count["n"] % 2 == 1 else review
 

@@ -30,9 +30,8 @@ def _gh_path() -> str:
 
 def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.CompletedProcess:
     """Run a gh CLI command with the given arguments."""
-    # S603 fires on any subprocess.run call regardless of arguments — there is no
-    # code pattern that satisfies it while still using subprocess. All args here
-    # are string literals from internal call sites, never from untrusted user input.
+    # S603: sole allowed suppression. The rule fires on all subprocess.run
+    # calls and cannot be satisfied while using subprocess.
     return subprocess.run(  # noqa: S603
         [_gh_path(), *args],
         capture_output=capture,
