@@ -24,6 +24,7 @@ touching agency itself.
 | Dependencies           | Weekly       | CVEs matter; daily creates alert fatigue         |
 | Deployments / PRs      | Daily        | Staleness compounds quickly                      |
 | Harness retrospective  | Weekly       | Cross-run patterns need accumulation; weekly gives enough data without losing signal to noise |
+| Issue grooming         | Before fixes | Ensures every issue the fix loop receives is still valid against the current codebase          |
 
 These are starting points. A high-traffic service with volatile logs may need
 more frequent scans; a stable library that changes rarely may need fewer.

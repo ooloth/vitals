@@ -19,6 +19,12 @@ uv run --frozen python run.py scan <project-id> --type <scan-type>
 # Fix a GitHub issue
 uv run --frozen python run.py fix --issue <number>
 
+# Groom open issues (dry run — logs verdicts without editing/closing)
+uv run --frozen python run.py groom <project-id> --dry-run
+
+# Groom open issues (edit partially resolved, close fully resolved)
+uv run --frozen python run.py groom <project-id>
+
 # With secrets from 1Password
 op run --env-file=secrets.env -- uv run --frozen python run.py scan <project-id>
 ```
