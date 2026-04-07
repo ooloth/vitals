@@ -197,7 +197,7 @@ def remove_label(issue_number: int, label: str) -> None:
 
 def open_pr(branch: str, impl: dict, project_path: Path) -> None:
     """Push the branch and open a pull request for the given implementation."""
-    git("push", "-u", "origin", branch, cwd=project_path, capture=False)
+    git("push", "--force-with-lease", "-u", "origin", branch, cwd=project_path, capture=False)
     gh(
         "pr",
         "create",
