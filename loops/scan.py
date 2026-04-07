@@ -15,7 +15,7 @@ from loops.common import (
     make_run_dir,
     post_issues,
     recent_run_summaries,
-    run_preflight,
+    run_scan_preflight,
     scan_context,
     write_step,
 )
@@ -136,7 +136,7 @@ def run_scan(
     if scan is None:
         msg = f"Project '{project_id}' has no '{scan_type}' scan configured"
         raise ValueError(msg)
-    run_preflight(project, scan)
+    run_scan_preflight(project, scan)
     context = scan_context(project, scan)
     if scan_type in ("agency/history/scans", "agency/history/fixes"):
         summaries = recent_run_summaries()

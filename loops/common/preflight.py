@@ -1,4 +1,4 @@
-"""Pre-flight environment checks for the scan coordinator.
+"""Pre-flight environment checks for loop coordinators.
 
 Validates runtime prerequisites (auth, tools, secrets, data sources) before
 any agent step launches. All failures are collected and reported together so
@@ -70,27 +70,49 @@ def _check_project_path(project: dict) -> str | None:
     return f"Project path does not exist: {resolved}"
 
 
-def run_preflight(project: dict, scan: dict) -> None:
-    """Validate runtime prerequisites before launching agent steps.
-
-    Collects all failures and prints them as human-readable messages to stderr,
-    then exits 1 if any check failed.
-    """
-    checks = [
-        _check_gh_auth,
-        _check_op_on_path,
-        _check_secrets_env,
-        lambda: _check_scan_token(scan),
-        lambda: _check_project_path(project),
-    ]
-
-    errors = [msg for check in checks if (msg := check()) is not None]
-
+def _report_failures(errors: list[str]) -> None:
+    """Log all collected errors and exit 1. No-op when the list is empty."""
     if not errors:
         log.info("[preflight] all checks passed")
         return
-
     log.error("[preflight] %s check(s) failed:", len(errors))
     for error in errors:
         log.error("[preflight]   ✗ %s", error)
     sys.exit(1)
+
+
+def _common_checks() -> list[str]:
+    """Run checks shared by all loops and return any error messages."""
+    checks = [_check_gh_auth, _check_op_on_path, _check_secrets_env]
+    return [msg for check in checks if (msg := check()) is not None]
+
+
+def run_scan_preflight(project: dict, scan: dict) -> None:
+    """Validate prerequisites for a scan run.
+
+    Common checks plus scan-specific: token env var and project path.
+    """
+    errors = _common_checks()
+    for check in [lambda: _check_scan_token(scan), lambda: _check_project_path(project)]:
+        if msg := check():
+            errors.append(msg)
+    _report_failures(errors)
+
+
+def run_fix_preflight(project: dict) -> None:
+    """Validate prerequisites for a fix run.
+
+    Common checks plus project path.
+    """
+    errors = _common_checks()
+    if msg := _check_project_path(project):
+        errors.append(msg)
+    _report_failures(errors)
+
+
+def run_groom_preflight() -> None:
+    """Validate prerequisites for a groom run.
+
+    Common checks only — groom works on issues, not the filesystem.
+    """
+    _report_failures(_common_checks())

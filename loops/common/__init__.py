@@ -18,7 +18,7 @@ from loops.common.github import (
 )
 from loops.common.logging import log
 from loops.common.logs import make_run_dir, recent_run_summaries, write_step
-from loops.common.preflight import run_preflight
+from loops.common.preflight import run_fix_preflight, run_groom_preflight, run_scan_preflight
 from loops.common.projects import (
     ROOT,
     load_project,
@@ -57,7 +57,9 @@ __all__ = [
     "recent_run_summaries",
     "remove_label",
     "run_command",
-    "run_preflight",
+    "run_fix_preflight",
+    "run_groom_preflight",
+    "run_scan_preflight",
     "run_tests",
     "scan_context",
     "write_step",

@@ -56,6 +56,7 @@ def _make_fix_mocks(*, converge: bool, no_diff: bool = False) -> dict:
         "open_pr": MagicMock(),
         "write_step": MagicMock(),
         "run_command": MagicMock(),
+        "run_fix_preflight": MagicMock(),
     }
 
     patches = {}

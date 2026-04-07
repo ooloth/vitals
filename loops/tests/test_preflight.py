@@ -11,7 +11,9 @@ from loops.common.preflight import (
     _check_project_path,
     _check_scan_token,
     _check_secrets_env,
-    run_preflight,
+    run_fix_preflight,
+    run_groom_preflight,
+    run_scan_preflight,
 )
 
 
@@ -96,7 +98,7 @@ class TestCheckProjectPath:
         assert "/nonexistent/path/to/project" in error
 
 
-class TestRunPreflight:
+class TestRunScanPreflight:
     def test_exits_1_when_any_check_fails(self) -> None:
         with (
             patch("loops.common.preflight._check_gh_auth", return_value="gh auth failed"),
@@ -106,7 +108,7 @@ class TestRunPreflight:
             patch("loops.common.preflight._check_project_path", return_value=None),
             pytest.raises(SystemExit, match="1"),
         ):
-            run_preflight({}, {})
+            run_scan_preflight({}, {})
 
     def test_does_not_exit_when_all_checks_pass(self) -> None:
         with (
@@ -116,7 +118,7 @@ class TestRunPreflight:
             patch("loops.common.preflight._check_scan_token", return_value=None),
             patch("loops.common.preflight._check_project_path", return_value=None),
         ):
-            run_preflight({}, {})  # should not raise
+            run_scan_preflight({}, {})  # should not raise
 
     def test_collects_all_errors(self) -> None:
         with (
@@ -128,10 +130,61 @@ class TestRunPreflight:
             patch("loops.common.preflight.log") as mock_log,
             pytest.raises(SystemExit),
         ):
-            run_preflight({}, {})
+            run_scan_preflight({}, {})
 
-        # Header says 3 checks failed
         mock_log.error.assert_any_call("[preflight] %s check(s) failed:", 3)
-        # Each error logged individually
         error_calls = [c for c in mock_log.error.call_args_list if "✗" in str(c)]
         assert len(error_calls) == 3
+
+
+class TestRunFixPreflight:
+    def test_exits_1_when_gh_auth_fails(self) -> None:
+        with (
+            patch("loops.common.preflight._check_gh_auth", return_value="gh auth failed"),
+            patch("loops.common.preflight._check_op_on_path", return_value=None),
+            patch("loops.common.preflight._check_secrets_env", return_value=None),
+            patch("loops.common.preflight._check_project_path", return_value=None),
+            pytest.raises(SystemExit, match="1"),
+        ):
+            run_fix_preflight({})
+
+    def test_exits_1_when_project_path_missing(self) -> None:
+        with (
+            patch("loops.common.preflight._check_gh_auth", return_value=None),
+            patch("loops.common.preflight._check_op_on_path", return_value=None),
+            patch("loops.common.preflight._check_secrets_env", return_value=None),
+            patch(
+                "loops.common.preflight._check_project_path",
+                return_value="path missing",
+            ),
+            pytest.raises(SystemExit, match="1"),
+        ):
+            run_fix_preflight({})
+
+    def test_does_not_exit_when_all_pass(self) -> None:
+        with (
+            patch("loops.common.preflight._check_gh_auth", return_value=None),
+            patch("loops.common.preflight._check_op_on_path", return_value=None),
+            patch("loops.common.preflight._check_secrets_env", return_value=None),
+            patch("loops.common.preflight._check_project_path", return_value=None),
+        ):
+            run_fix_preflight({})  # should not raise
+
+
+class TestRunGroomPreflight:
+    def test_exits_1_when_gh_auth_fails(self) -> None:
+        with (
+            patch("loops.common.preflight._check_gh_auth", return_value="gh auth failed"),
+            patch("loops.common.preflight._check_op_on_path", return_value=None),
+            patch("loops.common.preflight._check_secrets_env", return_value=None),
+            pytest.raises(SystemExit, match="1"),
+        ):
+            run_groom_preflight()
+
+    def test_does_not_exit_when_all_pass(self) -> None:
+        with (
+            patch("loops.common.preflight._check_gh_auth", return_value=None),
+            patch("loops.common.preflight._check_op_on_path", return_value=None),
+            patch("loops.common.preflight._check_secrets_env", return_value=None),
+        ):
+            run_groom_preflight()  # should not raise

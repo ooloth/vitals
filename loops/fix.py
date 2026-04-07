@@ -25,6 +25,7 @@ from loops.common import (
     project_context,
     remove_label,
     run_command,
+    run_fix_preflight,
     run_tests,
     write_step,
 )
@@ -220,6 +221,7 @@ def run_fix(
     """Pick an open issue, run implement→review rounds until approved, then open a PR."""
     project = load_project(project_id) if project_id else {}
     project_path = Path(project["path"]) if project else ROOT
+    run_fix_preflight(project)
 
     original_branch = git("rev-parse", "--abbrev-ref", "HEAD", cwd=project_path).stdout.strip()
 

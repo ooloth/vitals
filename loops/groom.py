@@ -18,6 +18,7 @@ from loops.common import (
     log,
     make_run_dir,
     open_autonomous_issues,
+    run_groom_preflight,
     write_step,
 )
 
@@ -74,6 +75,7 @@ def _apply_verdict(verdict: dict, issue_number: int, *, dry_run: bool) -> None:
 def run_groom(project_id: str, *, dry_run: bool = False) -> None:
     """Evaluate all open autonomous issues for freshness against the current codebase."""
     project = load_project(project_id)
+    run_groom_preflight()
     project_meta = {k: v for k, v in project.items() if k != "scans"}
 
     issues = open_autonomous_issues()
