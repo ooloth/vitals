@@ -12,19 +12,19 @@ cases here, and your effects land in those projects as issues and PRs.
 
 ```mermaid
 flowchart TD
-    subgraph scan["Scan loop (read-only)"]
+    subgraph scan["Scan loop"]
         direction LR
         S1[find] --> S2[triage] --> S3[draft] --> S4[review]
         S4 -.->|revise| S3
     end
     S4 -->|ready| issues[(GitHub issues)]
-    subgraph groom["Groom loop (read-only)"]
+    subgraph groom["Groom loop"]
         G1[evaluate]
     end
-    issues -->|open| G1
+    issues --> G1
     G1 -->|edit / close| issues
     issues --> F1
-    subgraph fix["Fix loop (write)"]
+    subgraph fix["Fix loop"]
         direction LR
         F1[implement] --> F2[review]
         F2 -.->|revise| F1
@@ -34,17 +34,19 @@ flowchart TD
 
 ## How it works
 
-- **Scan runs read**: they query logs, read codebases, or check whatever else you configure
-  — they analyze what they see and propose worthwhile actions by posting well-formed GitHub issues
-- **Groom runs read**: before fixes run, groom re-evaluates every open issue against the current
-  codebase — issues that are still accurate pass through unchanged, partially stale issues get
-  their bodies edited to reflect current state, and fully resolved issues are closed
-- **Fix runs write**: they pick up open issues, implement solutions in fresh agent subprocesses,
-  and open PRs after a review pass — GitHub issues are the handoff mechanism, so scan, groom, and
-  fix run on independent schedules
-- **The loops are fixed**: what varies are the scan configurations — adding a new scan type is
-  adding a prompt file and a scan block in `projects.json`; calibrations can be shared across
-  projects or tuned per project while the same loop machinery handles the rest
+- **Scan runs find problems**: they query logs, read codebases, or check whatever else you
+  configure — they analyze what they see and propose worthwhile actions by posting well-formed
+  GitHub issues
+- **Groom runs curate issues**: before fix runs, groom re-evaluates every open issue against the
+  current codebase — issues that are still accurate pass through unchanged, partially stale issues
+  get their bodies edited to reflect current state, and fully resolved issues are closed
+- **Fix runs ship solutions**: they pick up open issues, implement solutions in fresh agent
+  subprocesses, and open PRs after a review pass — GitHub issues are the handoff mechanism, so
+  scan, groom, and fix can all run on independent schedules
+- **The pipelines are deterministic**: every run follows the same fixed sequence of steps —
+  agentic behavior gets the repeatability and auditability you'd expect from a traditional
+  pipeline. What varies is configuration: adding a new scan type is adding a prompt file and a
+  scan block in `projects.json`
 
 ---
 
