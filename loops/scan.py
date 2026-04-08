@@ -9,11 +9,12 @@ from pathlib import Path
 from loops.common import (
     AgentConfig,
     approved_issue_count,
+    comment_on_issue,
     create_issue,
     load_project,
     log,
     make_run_dir,
-    post_issues,
+    open_issues,
     recent_run_summaries,
     run_scan_preflight,
     scan_context,
@@ -60,6 +61,57 @@ def _issue_labels(scan_type: str) -> list[str]:
     return ["autonomous", "needs-human-review", source]
 
 
+def _dispatch_dedup_actions(actions: list[dict], *, extra_labels: list[str], dry_run: bool) -> None:
+    """Execute the post/comment/skip actions returned by the dedup step."""
+    for entry in actions:
+        match entry["action"]:
+            case "post":
+                title = entry["title"]
+                body = entry["body"]
+                labels = [entry.get("label", "sev:medium"), *extra_labels]
+                if dry_run:
+                    log.info("\n[dry-run] would post issue:")
+                    log.info("  title: %s", title)
+                    log.info("  labels: %s", labels)
+                    log.info("  body:\n%s\n", body)
+                else:
+                    create_issue(title, body, labels)
+                    log.info("[dedup] posted new issue: %s", title)
+            case "comment":
+                target = entry["target_issue"]
+                reason = entry.get("reason", "")
+                if dry_run:
+                    log.info("\n[dry-run] would comment on #%s (overlap: %s)", target, reason)
+                    log.info("  body:\n%s\n", entry["comment_body"])
+                else:
+                    comment_on_issue(target, entry["comment_body"])
+                    log.info("[dedup] commented on #%s (overlap: %s)", target, reason)
+            case "skip":
+                log.info(
+                    "[dedup] skipped: %s — %s",
+                    entry.get("title", "?"),
+                    entry.get("reason", "no reason given"),
+                )
+            case other:
+                log.warning("[dedup] unknown action %r — skipping", other)
+
+
+def _run_dedup(
+    ctx: _RunCtx,
+    issues: list[dict],
+    *,
+    dry_run: bool,
+) -> None:
+    """Run the dedup step: compare approved issues against all open issues, then dispatch."""
+    existing = [] if dry_run else open_issues()
+    dedup_input = json.dumps({"candidates": issues, "open_issues": existing})
+    log.info(
+        "[scan] deduplicating %s issue(s) against %s open issue(s)...", len(issues), len(existing)
+    )
+    result = step(ctx, "dedup", "prompts/scan/dedup.md", dedup_input)
+    _dispatch_dedup_actions(result["actions"], extra_labels=ctx.extra_labels, dry_run=dry_run)
+
+
 def _run_review_rounds(
     ctx: _RunCtx,
     drafted: dict,
@@ -79,9 +131,8 @@ def _run_review_rounds(
             json.dumps(drafted),
         )
         if reviewed["ready"]:
-            post_issues(reviewed["issues"], extra_labels=ctx.extra_labels, dry_run=dry_run)
-            action = "would post" if dry_run else "posted"
-            log.info("[scan] %s: %s %s issue(s)", label, action, len(reviewed["issues"]))
+            _run_dedup(ctx, reviewed["issues"], dry_run=dry_run)
+            log.info("[scan] %s: dedup complete for %s issue(s)", label, len(reviewed["issues"]))
             return True
         ctx.last_review_feedback = reviewed["feedback"]
         log.info("[scan] round %s: needs revision — %s", round_n + 1, reviewed["feedback"])

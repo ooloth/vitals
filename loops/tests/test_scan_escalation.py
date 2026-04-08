@@ -27,9 +27,17 @@ def _make_scan_mocks(*, converge: bool) -> dict:
     }
     # Redraft returns a revised version of the draft (same structure as draft)
     redraft_result = {"issues": draft_issues, "reflections": []}
+    # Dedup step returns "post" action for each approved issue
+    dedup_result = {
+        "actions": [{"action": "post", "title": "Fix A", "body": "details", "label": "sev:medium"}],
+        "reflections": [],
+    }
 
     call_count = {"n": 0}
-    step_sequence = [find_result, triage_result, draft_result, review_result, redraft_result]
+    if converge:
+        step_sequence = [find_result, triage_result, draft_result, review_result, dedup_result]
+    else:
+        step_sequence = [find_result, triage_result, draft_result, review_result, redraft_result]
 
     def agent_side_effect(*_args: object, **_kwargs: object) -> dict:
         idx = min(call_count["n"], len(step_sequence) - 1)
@@ -49,7 +57,8 @@ def _make_scan_mocks(*, converge: bool) -> dict:
         "run_scan_preflight": MagicMock(),
         "scan_context": lambda _p, _s: "context",
         "make_run_dir": lambda _name: MagicMock(),
-        "post_issues": MagicMock(),
+        "open_issues": list,
+        "comment_on_issue": MagicMock(),
         "create_issue": MagicMock(),
         "write_step": MagicMock(),
     }
@@ -70,7 +79,7 @@ def _make_scan_mocks(*, converge: bool) -> dict:
 
 
 def test_scan_convergence_posts_issues_no_escalation() -> None:
-    """When review approves, issues are posted and no escalation issue is created."""
+    """When review approves, issues are posted via dedup dispatch (no escalation)."""
     setup = _make_scan_mocks(converge=True)
 
     with (
@@ -79,8 +88,11 @@ def test_scan_convergence_posts_issues_no_escalation() -> None:
     ):
         run_scan("test-project", scan_type="codebase/dead-code", max_rounds=1)
 
-    setup["mocks"]["post_issues"].assert_called_once()
-    setup["mocks"]["create_issue"].assert_not_called()
+    # Dedup dispatched one "post" action → create_issue called once (not an escalation)
+    create_call = setup["mocks"]["create_issue"].call_args
+    title, _body, labels = create_call.args
+    assert title == "Fix A"
+    assert "agent-scan-stalled" not in labels
 
 
 def test_scan_non_convergence_posts_escalation_issue() -> None:
@@ -94,8 +106,7 @@ def test_scan_non_convergence_posts_escalation_issue() -> None:
     ):
         run_scan("test-project", scan_type="codebase/dead-code", max_rounds=1)
 
-    setup["mocks"]["post_issues"].assert_not_called()
-
+    # Only call to create_issue should be the escalation
     create_call = setup["mocks"]["create_issue"].call_args
     title, body, labels = create_call.args
     assert "test-project/codebase/dead-code" in title
