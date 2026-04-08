@@ -142,6 +142,13 @@ def _run_review_rounds(
             "prompts/scan/draft.md",
             json.dumps(reviewed),
         )
+        if drafted.get("issues") == ctx.last_draft.get("issues"):
+            log.info(
+                "[scan] round %s: redraft identical to previous draft — escalating early",
+                round_n + 1,
+            )
+            ctx.last_draft = drafted
+            return False
     ctx.last_draft = drafted
     return False
 

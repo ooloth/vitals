@@ -1,6 +1,7 @@
 """Tests for the scan loop's escalation behaviour on non-convergence."""
 
 import contextlib
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from loops.scan import run_scan
@@ -115,6 +116,70 @@ def test_scan_non_convergence_posts_escalation_issue() -> None:
     assert "autonomous" in labels
     assert "needs more detail" in body
     assert "Fix A" in body
+
+
+def test_scan_identical_redraft_escalates_early() -> None:
+    """When a redraft is identical to the previous draft, escalate without running more rounds."""
+    findings = [{"description": "problem A", "severity": "medium"}]
+    clusters = [{"title": "cluster 1", "findings": findings}]
+    draft_issues = [{"title": "Fix A", "body": "details", "label": "sev:medium"}]
+
+    find_result = {"findings": findings, "reflections": []}
+    triage_result = {"clusters": clusters, "reflections": []}
+    draft_result = {"issues": draft_issues, "reflections": []}
+    review_reject = {
+        "ready": False,
+        "issues": [],
+        "feedback": "needs more detail",
+        "reflections": [],
+    }
+    # Redraft returns identical issues — different reflections should be ignored
+    redraft_identical = {"issues": draft_issues, "reflections": ["tried but couldn't improve"]}
+
+    step_sequence = [find_result, triage_result, draft_result, review_reject, redraft_identical]
+    call_count = {"n": 0}
+
+    def agent_side_effect(*_args: object, **_kwargs: object) -> dict:
+        idx = min(call_count["n"], len(step_sequence) - 1)
+        call_count["n"] += 1
+        return step_sequence[idx]
+
+    project = {
+        "id": "test-project",
+        "path": "/var/test-project",
+        "scans": [{"type": "codebase/dead-code", "paths": ["src/"]}],
+    }
+
+    patches: dict[str, Any] = {
+        "approved_issue_count": MagicMock(side_effect=lambda: 0),
+        "load_project": MagicMock(side_effect=lambda _pid: project),
+        "run_scan_preflight": MagicMock(),
+        "scan_context": MagicMock(side_effect=lambda _p, _s: "context"),
+        "make_run_dir": MagicMock(return_value=MagicMock()),
+        "open_issues": MagicMock(side_effect=list),
+        "comment_on_issue": MagicMock(),
+        "create_issue": MagicMock(),
+        "write_step": MagicMock(),
+    }
+    mock_agent = MagicMock(side_effect=agent_side_effect)
+
+    with (
+        patch.multiple("loops.scan", **patches),
+        patch("loops.common.step.agent", mock_agent),
+        contextlib.suppress(SystemExit),
+    ):
+        # max_rounds=3 — if the identical-redraft check is missing, we'd see
+        # 9 agent calls (find, triage, draft, 3x(review, redraft)); with the
+        # check we see exactly 5 (find, triage, draft, review-1, redraft-1).
+        run_scan("test-project", scan_type="codebase/dead-code", max_rounds=3)
+
+    assert mock_agent.call_count == 5
+
+    # Escalation issue was posted
+    create_call = patches["create_issue"].call_args
+    title, _body, labels = create_call.args
+    assert "Escalation" in title
+    assert "agent-scan-stalled" in labels
 
 
 def test_scan_non_convergence_dry_run_skips_escalation_post() -> None:
