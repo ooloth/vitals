@@ -4,7 +4,7 @@ import contextlib
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from loops.common.errors import AgentError, GitError
+from loops.common.errors import AgentError, CommandError, GitError
 from loops.common.github import next_open_issue, remove_label
 from loops.fix import run_fix
 
@@ -260,3 +260,47 @@ def test_git_error_posts_specific_comment() -> None:
     # in-progress removed
     remove_calls = setup["mocks"]["remove_label"].call_args_list
     assert (7, "agent-fix-in-progress") in [c.args for c in remove_calls]
+
+
+def test_setup_failure_posts_targeted_comment() -> None:
+    """A CommandError from setup posts a setup-specific comment, not removing ready-for-agent."""
+    setup = _make_error_mocks(error_source="agent")  # base mocks; we override below
+    # Project must have a setup command so _run_setup_commands calls run_command
+    setup["patches"]["load_project"] = MagicMock(
+        side_effect=lambda _pid: {"path": "/repo", "check": "uv run ruff check"},
+    )
+    setup["mocks"]["load_project"] = setup["patches"]["load_project"]
+    setup["patches"]["run_command"] = MagicMock(
+        side_effect=CommandError(
+            "running checks failed (exit 1): uv run ruff check",
+            cmd="uv run ruff check",
+            exit_code=1,
+        ),
+    )
+    setup["mocks"]["run_command"] = setup["patches"]["run_command"]
+
+    with (
+        patch.multiple("loops.fix", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+        contextlib.suppress(SystemExit),
+    ):
+        run_fix(issue_number=7, project_id="test-project", max_rounds=1)
+
+    # Setup-specific comment posted
+    comment_call = setup["mocks"]["comment_on_issue"].call_args
+    comment_body = comment_call[0][1]
+    assert "Setup command failed" in comment_body
+    assert "uv run ruff check" in comment_body
+    assert "1" in comment_body  # exit code
+
+    # in-progress removed, stalled added
+    add_calls = setup["mocks"]["add_label"].call_args_list
+    assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
+    remove_calls = setup["mocks"]["remove_label"].call_args_list
+    assert (7, "agent-fix-in-progress") in [c.args for c in remove_calls]
+
+    # ready-for-agent NOT removed (the issue is fine, the environment isn't)
+    assert (7, "ready-for-agent") not in [c.args for c in remove_calls]
+
+    # Agent was never called (setup failed before rounds)
+    setup["mocks"]["agent"].assert_not_called()

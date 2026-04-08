@@ -10,6 +10,7 @@ from loops.common import (
     ROOT,
     AgentConfig,
     AgentError,
+    CommandError,
     GitError,
     add_label,
     comment_on_issue,
@@ -134,6 +135,29 @@ def _build_failure_comment(ctx: _RunCtx, max_rounds: int) -> str:
         "- Remove the `agent-fix-stalled` label when ready for another attempt",
     ]
     return "\n".join(lines)
+
+
+def _build_setup_failure_comment(exc: CommandError) -> str:
+    """Build a markdown comment for when a setup command fails before rounds begin."""
+    detail_lines = [
+        f"Command: `{exc.cmd}`" if exc.cmd else "",
+        f"Exit code: `{exc.exit_code}`" if exc.exit_code is not None else "",
+    ]
+    detail = "\n".join(line for line in detail_lines if line)
+    return (
+        f"## 🛑 Setup command failed before fix attempt\n"
+        f"\n"
+        f"{detail}\n"
+        f"\n"
+        f"The issue was never attempted."
+        f" The project environment may need manual attention.\n"
+        f"\n"
+        f"### What to do next\n"
+        f"\n"
+        f"- Check the project's install/check/test commands in `projects.json`\n"
+        f"- Fix the environment issue, then remove the"
+        f" `agent-fix-stalled` label to retry"
+    )
 
 
 def _build_no_diff_comment(impl: dict) -> str:
@@ -267,7 +291,18 @@ def run_fix(
         started_at=time.monotonic(),
     )
 
-    _run_setup_commands(project, project_path)
+    try:
+        _run_setup_commands(project, project_path)
+    except CommandError as exc:
+        ctx.error = exc
+        ctx.exit_code = 1
+        log.error("[fix] setup failed: %s", exc)
+        remove_label(issue_number, "agent-fix-in-progress")
+        comment_on_issue(issue_number, _build_setup_failure_comment(exc))
+        add_label(issue_number, "agent-fix-stalled")
+        git("checkout", original_branch, cwd=project_path)
+        ctx.write_metadata()
+        sys.exit(ctx.exit_code)
 
     try:
         _run_rounds(ctx, project, project_path, max_rounds)
