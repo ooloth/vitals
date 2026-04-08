@@ -9,6 +9,8 @@ from pathlib import Path
 from loops.common import (
     ROOT,
     AgentConfig,
+    AgentError,
+    GitError,
     add_label,
     comment_on_issue,
     commit_if_dirty,
@@ -53,10 +55,11 @@ class _RunCtx:
     converged: bool = False
     escalated: bool = False
     exit_code: int = 0
+    error: Exception | None = None
 
     def write_metadata(self) -> None:
         """Persist run metadata and collected reflections."""
-        metadata = {
+        metadata: dict = {
             "run_type": "fix",
             "project_id": self.project_id,
             "issue_number": self.issue_number,
@@ -65,6 +68,11 @@ class _RunCtx:
             "converged": self.converged,
             "exit_code": self.exit_code,
         }
+        if self.error is not None:
+            metadata["error"] = {
+                "type": type(self.error).__name__,
+                "message": str(self.error),
+            }
         write_step(self.run_dir, "metadata", metadata)
         write_step(self.run_dir, "reflections", self.refs)
 
@@ -82,15 +90,41 @@ def _run_setup_commands(project: dict, project_path: Path) -> None:
 
 def _build_failure_comment(ctx: _RunCtx, max_rounds: int) -> str:
     """Build a markdown comment describing why the fix loop did not converge."""
+    error = ctx.error
+    match error:
+        case AgentError():
+            headline = "## 🛑 Agent error during fix attempt"
+            detail_lines = [
+                f"The agent failed at step **{error.step}**." if error.step else "",
+                f"Exit code: `{error.exit_code}`" if error.exit_code is not None else "",
+                f"Message: {error}" if str(error) else "",
+            ]
+            detail = "\n".join(line for line in detail_lines if line)
+        case GitError():
+            headline = "## 🛑 Git error during fix attempt"
+            detail = str(error)
+        case _:
+            headline = "## 🛑 Automatic fix did not converge"
+            detail = (
+                f"The fix loop ran **{ctx.rounds_completed}/{max_rounds}**"
+                " implement→review rounds without the reviewer approving."
+            )
+
     lines = [
-        "## 🛑 Automatic fix did not converge",
+        headline,
         "",
-        f"The fix loop ran **{ctx.rounds_completed}/{max_rounds}** implement→review rounds"
-        " without the reviewer approving.",
-        "",
-        "### Last rejection",
-        "",
-        ctx.last_rejection or "_(no reviewer feedback — all rounds produced no diff)_",
+        detail,
+    ]
+
+    if not isinstance(error, (AgentError, GitError)) and ctx.last_rejection:
+        lines += [
+            "",
+            "### Last rejection",
+            "",
+            ctx.last_rejection,
+        ]
+
+    lines += [
         "",
         "### What to do next",
         "",
@@ -237,14 +271,20 @@ def run_fix(
 
     try:
         _run_rounds(ctx, project, project_path, max_rounds)
+    except (AgentError, GitError) as exc:
+        ctx.error = exc
+        log.error("[fix] %s: %s", type(exc).__name__, exc)
     finally:
         if not ctx.converged:
             ctx.exit_code = max(ctx.exit_code, 1)
             remove_label(issue_number, "agent-fix-in-progress")
-            if ctx.rounds_completed > 0:
-                if not ctx.escalated:
-                    comment_on_issue(issue_number, _build_failure_comment(ctx, max_rounds))
-                    remove_label(issue_number, "ready-for-agent")
+            should_comment = (
+                ctx.rounds_completed > 0 or ctx.error is not None
+            ) and not ctx.escalated
+            if should_comment:
+                comment_on_issue(issue_number, _build_failure_comment(ctx, max_rounds))
+                remove_label(issue_number, "ready-for-agent")
+            if ctx.rounds_completed > 0 or ctx.error is not None:
                 add_label(issue_number, "agent-fix-stalled")
         git("checkout", original_branch, cwd=project_path)
         ctx.write_metadata()

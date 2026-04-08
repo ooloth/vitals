@@ -1,8 +1,10 @@
 """Tests for the fix loop's label and failure-comment behaviour."""
 
 import contextlib
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from loops.common.errors import AgentError, GitError
 from loops.common.github import next_open_issue, remove_label
 from loops.fix import run_fix
 
@@ -157,3 +159,104 @@ def test_no_diff_escalates_immediately() -> None:
     # agent-fix-stalled added to signal the attempt
     add_calls = setup["mocks"]["add_label"].call_args_list
     assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
+
+
+def _make_error_mocks(*, error_source: str) -> dict:
+    """Build mocks that inject a specific error into the fix loop.
+
+    error_source="agent" → AgentError from the first step() call.
+    error_source="git"   → GitError from prepare_branch.
+    """
+    issue_json = '{"number": 7, "title": "t", "body": "b", "labels": []}'
+
+    targets: dict = {
+        "load_project": lambda _pid: {},
+        "git": MagicMock(return_value=MagicMock(stdout="main\n")),
+        "next_open_issue": lambda: 7,
+        "add_label": MagicMock(),
+        "remove_label": MagicMock(),
+        "comment_on_issue": MagicMock(),
+        "make_run_dir": lambda _name: MagicMock(),
+        "project_context": lambda _p: "",
+        "issue_context": lambda _n: issue_json,
+        "commit_if_dirty": MagicMock(),
+        "get_diff": lambda _b, _p: "diff content",
+        "run_tests": lambda _p, _t: "ok",
+        "open_pr": MagicMock(),
+        "write_step": MagicMock(),
+        "run_command": MagicMock(),
+        "run_fix_preflight": MagicMock(),
+    }
+
+    if error_source == "git":
+        targets["prepare_branch"] = MagicMock(
+            side_effect=GitError("Working tree is dirty", path=Path("/repo")),
+        )
+    else:
+        targets["prepare_branch"] = lambda _n, _p: "fix/7"
+
+    mocks: dict[str, MagicMock] = {}
+    patches = {}
+    for name, side_effect in targets.items():
+        m = (
+            MagicMock(side_effect=side_effect)
+            if callable(side_effect) and not isinstance(side_effect, MagicMock)
+            else side_effect
+        )
+        mocks[name] = m
+        patches[name] = m
+
+    if error_source == "agent":
+        mocks["agent"] = MagicMock(
+            side_effect=AgentError("crashed", step="implement-1", exit_code=1),
+        )
+    else:
+        mocks["agent"] = MagicMock(return_value={"reflections": []})
+
+    return {"patches": patches, "mocks": mocks}
+
+
+def test_agent_error_posts_specific_comment() -> None:
+    """An AgentError during rounds posts a comment naming the step and exit code."""
+    setup = _make_error_mocks(error_source="agent")
+
+    with (
+        patch.multiple("loops.fix", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+        contextlib.suppress(SystemExit),
+    ):
+        run_fix(issue_number=7, max_rounds=1)
+
+    comment_call = setup["mocks"]["comment_on_issue"].call_args
+    comment_body = comment_call[0][1]
+    assert "Agent error" in comment_body
+    assert "implement-1" in comment_body
+    assert "1" in comment_body  # exit code
+
+    add_calls = setup["mocks"]["add_label"].call_args_list
+    assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
+
+
+def test_git_error_posts_specific_comment() -> None:
+    """A GitError from prepare_branch posts a comment mentioning the git error."""
+    setup = _make_error_mocks(error_source="git")
+
+    with (
+        patch.multiple("loops.fix", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+        contextlib.suppress(SystemExit),
+    ):
+        run_fix(issue_number=7, max_rounds=1)
+
+    comment_call = setup["mocks"]["comment_on_issue"].call_args
+    comment_body = comment_call[0][1]
+    assert "Git error" in comment_body
+    assert "dirty" in comment_body
+
+    # Stalled even at round 0 because there's a specific error
+    add_calls = setup["mocks"]["add_label"].call_args_list
+    assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
+
+    # in-progress removed
+    remove_calls = setup["mocks"]["remove_label"].call_args_list
+    assert (7, "agent-fix-in-progress") in [c.args for c in remove_calls]
