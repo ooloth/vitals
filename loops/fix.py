@@ -105,11 +105,15 @@ def _build_failure_comment(ctx: _RunCtx, max_rounds: int) -> str:
             headline = "## 🛑 Git error during fix attempt"
             detail = str(error)
         case _:
-            headline = "## 🛑 Automatic fix did not converge"
-            detail = (
-                f"The fix loop ran **{ctx.rounds_completed}/{max_rounds}**"
-                " implement→review rounds without the reviewer approving."
-            )
+            if error is not None:
+                headline = "## 🛑 Unexpected error during fix attempt"
+                detail = f"`{type(error).__name__}`: {error}"
+            else:
+                headline = "## 🛑 Automatic fix did not converge"
+                detail = (
+                    f"The fix loop ran **{ctx.rounds_completed}/{max_rounds}**"
+                    " implement→review rounds without the reviewer approving."
+                )
 
     lines = [
         headline,
@@ -308,9 +312,11 @@ def run_fix(
 
     try:
         _run_rounds(ctx, project, project_path, max_rounds)
-    except (AgentError, GitError) as exc:
+    except Exception as exc:
         ctx.error = exc
         log.error("[fix] %s: %s", type(exc).__name__, exc)
+        if not isinstance(exc, (AgentError, GitError)):
+            raise
     finally:
         if not ctx.converged:
             ctx.exit_code = max(ctx.exit_code, 1)

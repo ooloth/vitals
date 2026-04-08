@@ -4,6 +4,8 @@ import contextlib
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from loops.common.errors import AgentError, CommandError, CommitRejectedError, GitError
 from loops.common.github import next_open_issue, remove_label
 from loops.fix import run_fix
@@ -329,6 +331,33 @@ def test_commit_rejected_error_posts_git_error_comment() -> None:
     comment_body = comment_call[0][1]
     assert "Git error" in comment_body
     assert "ruff-check failed" in comment_body
+
+    add_calls = setup["mocks"]["add_label"].call_args_list
+    assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
+
+    remove_calls = setup["mocks"]["remove_label"].call_args_list
+    assert (7, "agent-fix-in-progress") in [c.args for c in remove_calls]
+
+
+def test_unexpected_error_records_and_reraises() -> None:
+    """An unexpected exception (not AgentError/GitError) still posts a comment and re-raises."""
+    setup = _make_fix_mocks(converge=False)
+    setup["patches"]["commit_if_dirty"] = MagicMock(
+        side_effect=RuntimeError("something unexpected"),
+    )
+    setup["mocks"]["commit_if_dirty"] = setup["patches"]["commit_if_dirty"]
+
+    with (
+        patch.multiple("loops.fix", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+        pytest.raises(RuntimeError, match="something unexpected"),
+    ):
+        run_fix(issue_number=7, max_rounds=1)
+
+    comment_call = setup["mocks"]["comment_on_issue"].call_args
+    comment_body = comment_call[0][1]
+    assert "Unexpected error" in comment_body
+    assert "RuntimeError" in comment_body
 
     add_calls = setup["mocks"]["add_label"].call_args_list
     assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
