@@ -10,7 +10,6 @@ from loops.common import (
     ROOT,
     AgentConfig,
     add_label,
-    agent,
     comment_on_issue,
     commit_if_dirty,
     get_diff,
@@ -27,6 +26,7 @@ from loops.common import (
     run_command,
     run_fix_preflight,
     run_tests,
+    step,
     write_step,
 )
 
@@ -67,27 +67,6 @@ class _RunCtx:
         }
         write_step(self.run_dir, "metadata", metadata)
         write_step(self.run_dir, "reflections", self.refs)
-
-
-def _step(
-    ctx: _RunCtx,
-    name: str,
-    prompt: str,
-    content: str,
-    allowed_tools: list[str] | None = None,
-) -> dict:
-    """Run one agent step: time it, persist output, collect reflections."""
-    t0 = time.monotonic()
-    cfg = AgentConfig(
-        allowed_tools=allowed_tools,
-        transcript_path=ctx.run_dir / f"{name}-transcript.jsonl",
-        step_name=name,
-    )
-    out = agent(prompt, content, cfg)
-    ctx.steps.append({"name": name, "duration_seconds": round(time.monotonic() - t0, 1)})
-    write_step(ctx.run_dir, name, out)
-    ctx.refs.extend({"step": name, "text": r} for r in out.get("reflections", []))
-    return out
 
 
 def _run_setup_commands(project: dict, project_path: Path) -> None:
@@ -162,12 +141,12 @@ def _run_rounds(
 
     for round_n in range(max_rounds):
         log.info("[fix] round %s: implementing...", round_n + 1)
-        impl = _step(
+        impl = step(
             ctx,
             f"implement-{round_n + 1}",
             "prompts/fix/implement.md",
             issue,
-            IMPLEMENT_TOOLS,
+            AgentConfig(allowed_tools=IMPLEMENT_TOOLS),
         )
 
         commit_if_dirty(impl.get("pr_title", f"fix: issue #{ctx.issue_number}"), project_path)
@@ -196,12 +175,12 @@ def _run_rounds(
         )
 
         log.info("[fix] round %s: reviewing...", round_n + 1)
-        reviewed = _step(
+        reviewed = step(
             ctx,
             f"review-{round_n + 1}",
             "prompts/fix/review.md",
             review_context,
-            REVIEW_TOOLS,
+            AgentConfig(allowed_tools=REVIEW_TOOLS),
         )
 
         if reviewed["approved"]:

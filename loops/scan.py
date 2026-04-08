@@ -8,7 +8,6 @@ from pathlib import Path
 
 from loops.common import (
     AgentConfig,
-    agent,
     approved_issue_count,
     create_issue,
     load_project,
@@ -18,6 +17,7 @@ from loops.common import (
     recent_run_summaries,
     run_scan_preflight,
     scan_context,
+    step,
     write_step,
 )
 
@@ -36,17 +36,10 @@ class _RunCtx:
     exit_code: int = 0
 
 
-@dataclasses.dataclass
-class _StepCfg:
-    # Find steps are read-only analysis: explicit list prevents silent Bash
-    # denial in non-interactive -p mode (see decision 08). Triage/draft/review
-    # steps work on JSON input and need no tools, so None is fine.
-    allowed_tools: list[str] | None = None
-    # Higher ceiling for find: docs-heavy scans need many reads.
-    max_turns: int = 20
-
-
-_FIND_CFG = _StepCfg(allowed_tools=["Read", "Glob", "Grep"], max_turns=30)
+# Find steps are read-only analysis: explicit list prevents silent Bash
+# denial in non-interactive -p mode (see decision 08). Higher ceiling
+# for find: docs-heavy scans need many reads.
+_FIND_CFG = AgentConfig(allowed_tools=["Read", "Glob", "Grep"], max_turns=30)
 
 
 def _find_prompt(scan_type: str) -> str:
@@ -67,29 +60,6 @@ def _issue_labels(scan_type: str) -> list[str]:
     return ["autonomous", "needs-human-review", source]
 
 
-def _step(
-    ctx: _RunCtx,
-    name: str,
-    prompt: str,
-    content: str,
-    step_cfg: _StepCfg | None = None,
-) -> dict:
-    """Run one agent step: time it, persist output, collect reflections."""
-    step_cfg = step_cfg or _StepCfg()
-    t0 = time.monotonic()
-    agent_cfg = AgentConfig(
-        max_turns=step_cfg.max_turns,
-        allowed_tools=step_cfg.allowed_tools,
-        transcript_path=ctx.run_dir / f"{name}-transcript.jsonl",
-        step_name=name,
-    )
-    out = agent(prompt, content, agent_cfg)
-    ctx.steps.append({"name": name, "duration_seconds": round(time.monotonic() - t0, 1)})
-    write_step(ctx.run_dir, name, out)
-    ctx.refs.extend({"step": name, "text": r} for r in out.get("reflections", []))
-    return out
-
-
 def _run_review_rounds(
     ctx: _RunCtx,
     drafted: dict,
@@ -102,7 +72,7 @@ def _run_review_rounds(
     for round_n in range(max_rounds):
         ctx.last_draft = drafted
         log.info("[scan] reviewing issues (round %s)...", round_n + 1)
-        reviewed = _step(
+        reviewed = step(
             ctx,
             f"review-{round_n + 1}",
             "prompts/scan/review.md",
@@ -115,7 +85,7 @@ def _run_review_rounds(
             return True
         ctx.last_review_feedback = reviewed["feedback"]
         log.info("[scan] round %s: needs revision — %s", round_n + 1, reviewed["feedback"])
-        drafted = _step(
+        drafted = step(
             ctx,
             f"redraft-{round_n + 1}",
             "prompts/scan/draft.md",
@@ -217,7 +187,7 @@ def run_scan(
 
     try:
         log.info("[scan] %s/%s: finding problems...", project_id, scan_type)
-        raw = _step(ctx, "find", _find_prompt(scan_type), context, _FIND_CFG)
+        raw = step(ctx, "find", _find_prompt(scan_type), context, _FIND_CFG)
 
         if not raw.get("findings"):
             log.info("[scan] %s/%s: nothing to report", project_id, scan_type)
@@ -225,7 +195,7 @@ def run_scan(
             return
 
         log.info("[scan] %s finding(s) — triaging...", len(raw["findings"]))
-        clustered = _step(ctx, "triage", "prompts/scan/triage.md", json.dumps(raw))
+        clustered = step(ctx, "triage", "prompts/scan/triage.md", json.dumps(raw))
 
         if not clustered.get("clusters"):
             log.info("[scan] %s/%s: no actionable clusters after triage", project_id, scan_type)
@@ -233,7 +203,7 @@ def run_scan(
             return
 
         log.info("[scan] %s cluster(s) — drafting issues...", len(clustered["clusters"]))
-        drafted = _step(ctx, "draft", "prompts/scan/draft.md", json.dumps(clustered))
+        drafted = step(ctx, "draft", "prompts/scan/draft.md", json.dumps(clustered))
 
         ctx.converged = _run_review_rounds(
             ctx, drafted, max_rounds, f"{project_id}/{scan_type}", dry_run=dry_run

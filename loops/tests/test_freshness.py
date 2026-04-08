@@ -76,7 +76,7 @@ class TestRunGroom:
         with (
             patch("loops.groom.load_project", return_value={"id": "agency", "scans": []}),
             patch("loops.groom.open_autonomous_issues", return_value=[]),
-            patch("loops.groom.agent") as agent_mock,
+            patch("loops.common.step.agent") as agent_mock,
         ):
             run_groom("agency")
 
@@ -95,7 +95,7 @@ class TestRunGroom:
         with (
             patch("loops.groom.load_project", return_value={"id": "agency", "scans": []}),
             patch("loops.groom.open_autonomous_issues", return_value=issues),
-            patch("loops.groom.agent", side_effect=verdicts),
+            patch("loops.common.step.agent", side_effect=verdicts),
             patch("loops.groom._apply_verdict") as apply_mock,
             patch("loops.groom.make_run_dir", return_value=MagicMock()),
             patch("loops.groom.write_step"),

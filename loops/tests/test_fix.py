@@ -76,9 +76,7 @@ def _make_fix_mocks(*, converge: bool, no_diff: bool = False) -> dict:
         call_count["n"] += 1
         return impl if call_count["n"] % 2 == 1 else review
 
-    agent_mock = MagicMock(side_effect=agent_side_effect)
-    mocks["agent"] = agent_mock
-    patches["agent"] = agent_mock
+    mocks["agent"] = MagicMock(side_effect=agent_side_effect)
 
     return {"patches": patches, "mocks": mocks}
 
@@ -87,7 +85,10 @@ def test_label_stays_on_convergence() -> None:
     """When the loop converges (PR opened), the label is NOT removed."""
     setup = _make_fix_mocks(converge=True)
 
-    with patch.multiple("loops.fix", **setup["patches"]):
+    with (
+        patch.multiple("loops.fix", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+    ):
         run_fix(issue_number=7, max_rounds=1)
 
     setup["mocks"]["add_label"].assert_called_once_with(7, "agent-fix-in-progress")
@@ -100,7 +101,11 @@ def test_non_convergence_posts_comment_and_stalls() -> None:
     """When the loop does NOT converge, a failure comment is posted and the issue is stalled."""
     setup = _make_fix_mocks(converge=False)
 
-    with patch.multiple("loops.fix", **setup["patches"]), contextlib.suppress(SystemExit):
+    with (
+        patch.multiple("loops.fix", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+        contextlib.suppress(SystemExit),
+    ):
         run_fix(issue_number=7, max_rounds=1)
 
     remove_calls = setup["mocks"]["remove_label"].call_args_list
@@ -126,7 +131,11 @@ def test_no_diff_escalates_immediately() -> None:
     """When implement produces no diff, the agent's output is posted and the issue is stalled."""
     setup = _make_fix_mocks(converge=False, no_diff=True)
 
-    with patch.multiple("loops.fix", **setup["patches"]), contextlib.suppress(SystemExit):
+    with (
+        patch.multiple("loops.fix", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+        contextlib.suppress(SystemExit),
+    ):
         run_fix(issue_number=7, max_rounds=2)
 
     # Only one implement call — no retry, no review

@@ -64,9 +64,7 @@ def _make_scan_mocks(*, converge: bool) -> dict:
         mocks[name] = m
         patches[name] = m
 
-    agent_mock = MagicMock(side_effect=agent_side_effect)
-    mocks["agent"] = agent_mock
-    patches["agent"] = agent_mock
+    mocks["agent"] = MagicMock(side_effect=agent_side_effect)
 
     return {"patches": patches, "mocks": mocks}
 
@@ -75,7 +73,10 @@ def test_scan_convergence_posts_issues_no_escalation() -> None:
     """When review approves, issues are posted and no escalation issue is created."""
     setup = _make_scan_mocks(converge=True)
 
-    with patch.multiple("loops.scan", **setup["patches"]):
+    with (
+        patch.multiple("loops.scan", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+    ):
         run_scan("test-project", scan_type="codebase/dead-code", max_rounds=1)
 
     setup["mocks"]["post_issues"].assert_called_once()
@@ -86,7 +87,11 @@ def test_scan_non_convergence_posts_escalation_issue() -> None:
     """When review rounds exhaust without approval, an escalation issue is created."""
     setup = _make_scan_mocks(converge=False)
 
-    with patch.multiple("loops.scan", **setup["patches"]), contextlib.suppress(SystemExit):
+    with (
+        patch.multiple("loops.scan", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+        contextlib.suppress(SystemExit),
+    ):
         run_scan("test-project", scan_type="codebase/dead-code", max_rounds=1)
 
     setup["mocks"]["post_issues"].assert_not_called()
@@ -105,7 +110,11 @@ def test_scan_non_convergence_dry_run_skips_escalation_post() -> None:
     """In dry-run mode, escalation is logged but no issue is created."""
     setup = _make_scan_mocks(converge=False)
 
-    with patch.multiple("loops.scan", **setup["patches"]), contextlib.suppress(SystemExit):
+    with (
+        patch.multiple("loops.scan", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+        contextlib.suppress(SystemExit),
+    ):
         run_scan("test-project", scan_type="codebase/dead-code", max_rounds=1, dry_run=True)
 
     setup["mocks"]["create_issue"].assert_not_called()

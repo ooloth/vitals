@@ -27,10 +27,12 @@ from loops.common.projects import (
     run_tests,
     scan_context,
 )
+from loops.common.step import StepCtx, step
 
 __all__ = [
     "ROOT",
     "AgentConfig",
+    "StepCtx",
     "add_label",
     "agent",
     "approved_issue_count",
@@ -62,5 +64,6 @@ __all__ = [
     "run_scan_preflight",
     "run_tests",
     "scan_context",
+    "step",
     "write_step",
 ]
