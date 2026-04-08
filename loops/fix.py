@@ -81,6 +81,9 @@ class _RunCtx:
 def _run_post_implement_checks(project: dict, project_path: Path) -> None:
     """Run the project's check command to apply auto-fixes before committing.
 
+    Stages all files first so that new (untracked) files are visible to
+    checks that operate on tracked/staged files (e.g. pre-commit --all-files).
+
     The first run may auto-fix lint violations (e.g. ruff reformatting),
     causing a non-zero exit. A second run verifies the fixes are clean.
     If the second run still fails, the check command itself has issues
@@ -89,6 +92,7 @@ def _run_post_implement_checks(project: dict, project_path: Path) -> None:
     check_cmd = project.get("check")
     if not check_cmd:
         return
+    git("add", "-A", cwd=project_path)
     try:
         run_command(check_cmd, project_path, "post-implement checks")
     except CommandError:
