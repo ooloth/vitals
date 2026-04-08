@@ -2,9 +2,8 @@
 
 Belongs here: thin wrappers around gh commands usable by any loop or
 module (gh, create_issue, add_label, ensure_label, comment_on_issue,
-open_pr, issue_context, open_autonomous_issues, open_autonomous_titles,
-approved_issue_count, next_open_issue, post_issues, edit_issue_body,
-close_issue).
+open_pr, issue_context, open_autonomous_issues, open_issues,
+approved_issue_count, next_open_issue, edit_issue_body, close_issue).
 
 Does not belong here: domain logic tied to a specific loop or agent
 (e.g. retrospective findings, reflection issue queries).
@@ -108,12 +107,6 @@ def open_autonomous_issues() -> list[dict]:
     return json.loads(result.stdout)
 
 
-def open_autonomous_titles() -> set[str]:
-    """Return the titles of all open autonomously-created issues (for deduplication)."""
-    result = gh("issue", "list", "--label", "autonomous", "--json", "title", "--limit", "100")
-    return {i["title"] for i in json.loads(result.stdout)}
-
-
 def open_issues() -> list[dict]:
     """Return number, title, and body of all open issues (for cross-issue deduplication)."""
     result = gh(
@@ -133,26 +126,6 @@ def approved_issue_count() -> int:
     """Return the number of open ready-for-agent issues (for backpressure checks)."""
     result = gh("issue", "list", "--label", "ready-for-agent", "--json", "number", "--limit", "100")
     return len(json.loads(result.stdout))
-
-
-def post_issues(
-    issues: list[dict], *, extra_labels: list[str] | None = None, dry_run: bool = False
-) -> None:
-    """Post each issue to GitHub, skipping duplicates and logging dry-run output."""
-    existing = set() if dry_run else open_autonomous_titles()
-    for issue in issues:
-        title = issue["title"]
-        if title in existing:
-            log.info("[scan] skipping duplicate: %r", title)
-            continue
-        labels = [issue.get("label", "sev:medium"), *(extra_labels or [])]
-        if dry_run:
-            log.info("\n[dry-run] would post issue:")
-            log.info("  title: %s", title)
-            log.info("  labels: %s", labels)
-            log.info("  body:\n%s\n", issue["body"])
-        else:
-            create_issue(title, issue["body"], labels)
 
 
 def comment_on_issue(issue_number: int, body: str) -> None:

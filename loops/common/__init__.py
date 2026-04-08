@@ -11,10 +11,8 @@ from loops.common.github import (
     issue_context,
     next_open_issue,
     open_autonomous_issues,
-    open_autonomous_titles,
     open_issues,
     open_pr,
-    post_issues,
     remove_label,
 )
 from loops.common.logging import log
@@ -52,10 +50,8 @@ __all__ = [
     "make_run_dir",
     "next_open_issue",
     "open_autonomous_issues",
-    "open_autonomous_titles",
     "open_issues",
     "open_pr",
-    "post_issues",
     "prepare_branch",
     "project_context",
     "recent_run_summaries",

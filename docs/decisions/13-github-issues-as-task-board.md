@@ -47,8 +47,8 @@ The fix loop queries `--label ready-for-agent` to find its next issue, excluding
 issues labeled `agent-fix-in-progress` (claimed by another run) or
 `agent-fix-stalled` (failed on a prior attempt and awaiting human review). No
 other label causes the fix loop to act. Labels like `enhancement` and `idea` are
-purely for human organisation — agents ignore them. The scan loop queries
-`--label autonomous` when checking for duplicate titles before posting.
+purely for human organisation — agents ignore them. The scan loop runs a semantic dedup step that compares candidate issues
+against all open issues (not just autonomous) before posting.
 The backpressure cap counts `--label ready-for-agent` issues — the depth of the
 fix loop queue — not all autonomous issues.
 
