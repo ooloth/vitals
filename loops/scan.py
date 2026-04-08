@@ -32,6 +32,8 @@ class _RunCtx:
     extra_labels: list[str]
     last_draft: dict = dataclasses.field(default_factory=dict)
     last_review_feedback: str = ""
+    converged: bool = False
+    exit_code: int = 0
 
 
 @dataclasses.dataclass
@@ -212,8 +214,6 @@ def run_scan(
     run_dir = make_run_dir(f"{project_id}-{scan_type.replace('/', '-')}")
     ctx = _RunCtx(run_dir=run_dir, steps=[], refs=[], extra_labels=_issue_labels(scan_type))
     started_at = time.monotonic()
-    converged = False
-    exit_code = 0
 
     try:
         log.info("[scan] %s/%s: finding problems...", project_id, scan_type)
@@ -221,7 +221,7 @@ def run_scan(
 
         if not raw.get("findings"):
             log.info("[scan] %s/%s: nothing to report", project_id, scan_type)
-            converged = True
+            ctx.converged = True
             return
 
         log.info("[scan] %s finding(s) — triaging...", len(raw["findings"]))
@@ -229,16 +229,16 @@ def run_scan(
 
         if not clustered.get("clusters"):
             log.info("[scan] %s/%s: no actionable clusters after triage", project_id, scan_type)
-            converged = True
+            ctx.converged = True
             return
 
         log.info("[scan] %s cluster(s) — drafting issues...", len(clustered["clusters"]))
         drafted = _step(ctx, "draft", "prompts/scan/draft.md", json.dumps(clustered))
 
-        converged = _run_review_rounds(
+        ctx.converged = _run_review_rounds(
             ctx, drafted, max_rounds, f"{project_id}/{scan_type}", dry_run=dry_run
         )
-        if not converged:
+        if not ctx.converged:
             log.error(
                 "[escalate] %s/%s: issues did not converge after %s rounds",
                 project_id,
@@ -246,11 +246,11 @@ def run_scan(
                 max_rounds,
             )
             _post_escalation_issue(project_id, scan_type, max_rounds, ctx, dry_run=dry_run)
-            exit_code = 1
+            ctx.exit_code = 1
 
     finally:
-        if not converged:
-            exit_code = max(exit_code, 1)
+        if not ctx.converged:
+            ctx.exit_code = max(ctx.exit_code, 1)
         metadata = {
             "run_type": "scan",
             "project_id": project_id,
@@ -258,10 +258,10 @@ def run_scan(
             "dry_run": dry_run,
             "duration_seconds": round(time.monotonic() - started_at, 1),
             "steps": ctx.steps,
-            "converged": converged,
-            "exit_code": exit_code,
+            "converged": ctx.converged,
+            "exit_code": ctx.exit_code,
         }
         write_step(run_dir, "metadata", metadata)
         write_step(run_dir, "reflections", ctx.refs)
-        if exit_code != 0 and sys.exc_info()[0] is None:
-            sys.exit(exit_code)
+        if ctx.exit_code != 0 and sys.exc_info()[0] is None:
+            sys.exit(ctx.exit_code)
